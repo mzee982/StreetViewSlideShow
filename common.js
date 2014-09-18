@@ -20,18 +20,18 @@ function isLocalStorageSupported() {
 }
 
 function getBoundsFromLocalStorage() {
-    var boundsSouthString = window.localStorage.getItem(BOUNDS_SOUTH_STORAGE_ID);
-    var boundsWestString = window.localStorage.getItem(BOUNDS_WEST_STORAGE_ID);
-    var boundsNorthString = window.localStorage.getItem(BOUNDS_NORTH_STORAGE_ID);
-    var boundsEastString = window.localStorage.getItem(BOUNDS_EAST_STORAGE_ID);
-    
+    var boundsSouthString = $.jStorage.get(BOUNDS_SOUTH_STORAGE_ID);
+    var boundsWestString = $.jStorage.get(BOUNDS_WEST_STORAGE_ID);
+    var boundsNorthString = $.jStorage.get(BOUNDS_NORTH_STORAGE_ID);
+    var boundsEastString = $.jStorage.get(BOUNDS_EAST_STORAGE_ID);
+
     if ((boundsSouthString != null) 
             && (boundsWestString != null) 
             && (boundsNorthString != null) 
             && (boundsEastString != null)) {
         return new google.maps.LatLngBounds(
-                new google.maps.LatLng(Number.parseFloat(boundsSouthString), Number.parseFloat(boundsWestString)), 
-                new google.maps.LatLng(Number.parseFloat(boundsNorthString), Number.parseFloat(boundsEastString)));
+                new google.maps.LatLng(parseFloat(boundsSouthString), parseFloat(boundsWestString)),
+                new google.maps.LatLng(parseFloat(boundsNorthString), parseFloat(boundsEastString)));
     }
     else {
         setBoundsToLocalStorage(DEFAULT_BOUNDS);
@@ -40,36 +40,36 @@ function getBoundsFromLocalStorage() {
 }
 
 function setBoundsToLocalStorage(bounds) {
-    window.localStorage.setItem(BOUNDS_SOUTH_STORAGE_ID, bounds.getSouthWest().lat().toString());
-    window.localStorage.setItem(BOUNDS_WEST_STORAGE_ID, bounds.getSouthWest().lng().toString());
-    window.localStorage.setItem(BOUNDS_NORTH_STORAGE_ID, bounds.getNorthEast().lat().toString());
-    window.localStorage.setItem(BOUNDS_EAST_STORAGE_ID, bounds.getNorthEast().lng().toString());
+    $.jStorage.set(BOUNDS_SOUTH_STORAGE_ID, bounds.getSouthWest().lat().toString());
+    $.jStorage.set(BOUNDS_WEST_STORAGE_ID, bounds.getSouthWest().lng().toString());
+    $.jStorage.set(BOUNDS_NORTH_STORAGE_ID, bounds.getNorthEast().lat().toString());
+    $.jStorage.set(BOUNDS_EAST_STORAGE_ID, bounds.getNorthEast().lng().toString());
 }
 
 function removeBoundsFromLocalStorage() {
-    window.localStorage.removeItem(BOUNDS_SOUTH_STORAGE_ID);
-    window.localStorage.removeItem(BOUNDS_WEST_STORAGE_ID);
-    window.localStorage.removeItem(BOUNDS_NORTH_STORAGE_ID);
-    window.localStorage.removeItem(BOUNDS_EAST_STORAGE_ID);
+    $.jStorage.deleteKey(BOUNDS_SOUTH_STORAGE_ID);
+    $.jStorage.deleteKey(BOUNDS_WEST_STORAGE_ID);
+    $.jStorage.deleteKey(BOUNDS_NORTH_STORAGE_ID);
+    $.jStorage.deleteKey(BOUNDS_EAST_STORAGE_ID);
 }
 
 function getSettingsFromLocalStorage() {
-    var swapPanoramaIntervalString = window.localStorage.getItem(SWAP_PANORAMA_INTERVAL_STORAGE_ID);
-    var panoramaFadeOutSpeedString = window.localStorage.getItem(PANORAMA_FADE_OUT_SPEED_STORAGE_ID);
-    var animatePanoramaIntervalString = window.localStorage.getItem(ANIMATE_PANORAMA_INTERVAL_STORAGE_ID);
-    var animatePanoramaHeadingStepString = window.localStorage.getItem(ANIMATE_PANORAMA_HEADING_STEP_STORAGE_ID);
-    var animatePanoramaZoomStepString = window.localStorage.getItem(ANIMATE_PANORAMA_ZOOM_STEP_STORAGE_ID);
-    
+    var swapPanoramaIntervalString = $.jStorage.get(SWAP_PANORAMA_INTERVAL_STORAGE_ID);
+    var panoramaFadeOutSpeedString = $.jStorage.get(PANORAMA_FADE_OUT_SPEED_STORAGE_ID);
+    var animatePanoramaIntervalString = $.jStorage.get(ANIMATE_PANORAMA_INTERVAL_STORAGE_ID);
+    var animatePanoramaHeadingStepString = $.jStorage.get(ANIMATE_PANORAMA_HEADING_STEP_STORAGE_ID);
+    var animatePanoramaZoomStepString = $.jStorage.get(ANIMATE_PANORAMA_ZOOM_STEP_STORAGE_ID);
+
     if ((swapPanoramaIntervalString != null) 
             && (panoramaFadeOutSpeedString != null) 
             && (animatePanoramaIntervalString != null) 
             && (animatePanoramaHeadingStepString != null) 
             && (animatePanoramaZoomStepString != null)) {
-        return {swapPanoramaInterval: Number.parseInt(swapPanoramaIntervalString),
-                panoramaFadeOutSpeed: Number.parseInt(panoramaFadeOutSpeedString), 
-                animatePanoramaInterval: Number.parseInt(animatePanoramaIntervalString),
-                animatePanoramaHeadingStep: Number.parseFloat(animatePanoramaHeadingStepString),
-                animatePanoramaZoomStep: Number.parseInt(animatePanoramaZoomStepString)};
+        return {swapPanoramaInterval: parseInt(swapPanoramaIntervalString),
+                panoramaFadeOutSpeed: parseInt(panoramaFadeOutSpeedString),
+                animatePanoramaInterval: parseInt(animatePanoramaIntervalString),
+                animatePanoramaHeadingStep: parseFloat(animatePanoramaHeadingStepString),
+                animatePanoramaZoomStep: parseInt(animatePanoramaZoomStepString)};
     }
     else {
         setSettingsToLocalStorage(DEFAULT_SETTINGS);
@@ -78,17 +78,17 @@ function getSettingsFromLocalStorage() {
 }
 
 function setSettingsToLocalStorage(settings) {
-    window.localStorage.setItem(SWAP_PANORAMA_INTERVAL_STORAGE_ID, settings.swapPanoramaInterval);
-    window.localStorage.setItem(PANORAMA_FADE_OUT_SPEED_STORAGE_ID, settings.panoramaFadeOutSpeed);
-    window.localStorage.setItem(ANIMATE_PANORAMA_INTERVAL_STORAGE_ID, settings.animatePanoramaInterval);
-    window.localStorage.setItem(ANIMATE_PANORAMA_HEADING_STEP_STORAGE_ID, settings.animatePanoramaHeadingStep);
-    window.localStorage.setItem(ANIMATE_PANORAMA_ZOOM_STEP_STORAGE_ID, settings.animatePanoramaZoomStep);
+    $.jStorage.set(SWAP_PANORAMA_INTERVAL_STORAGE_ID, settings.swapPanoramaInterval);
+    $.jStorage.set(PANORAMA_FADE_OUT_SPEED_STORAGE_ID, settings.panoramaFadeOutSpeed);
+    $.jStorage.set(ANIMATE_PANORAMA_INTERVAL_STORAGE_ID, settings.animatePanoramaInterval);
+    $.jStorage.set(ANIMATE_PANORAMA_HEADING_STEP_STORAGE_ID, settings.animatePanoramaHeadingStep);
+    $.jStorage.set(ANIMATE_PANORAMA_ZOOM_STEP_STORAGE_ID, settings.animatePanoramaZoomStep);
 }
 
 function removeSettingsFromLocalStorage() {
-    window.localStorage.removeItem(SWAP_PANORAMA_INTERVAL_STORAGE_ID);
-    window.localStorage.removeItem(PANORAMA_FADE_OUT_SPEED_STORAGE_ID);
-    window.localStorage.removeItem(ANIMATE_PANORAMA_INTERVAL_STORAGE_ID);
-    window.localStorage.removeItem(ANIMATE_PANORAMA_HEADING_STEP_STORAGE_ID);
-    window.localStorage.removeItem(ANIMATE_PANORAMA_ZOOM_STEP_STORAGE_ID);
+    $.jStorage.deleteKey(SWAP_PANORAMA_INTERVAL_STORAGE_ID);
+    $.jStorage.deleteKey(PANORAMA_FADE_OUT_SPEED_STORAGE_ID);
+    $.jStorage.deleteKey(ANIMATE_PANORAMA_INTERVAL_STORAGE_ID);
+    $.jStorage.deleteKey(ANIMATE_PANORAMA_HEADING_STEP_STORAGE_ID);
+    $.jStorage.deleteKey(ANIMATE_PANORAMA_ZOOM_STEP_STORAGE_ID);
 }

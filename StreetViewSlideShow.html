@@ -1,46 +1,272 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-    <title>StreetView SlideShow</title>
-    <meta http-equiv="refresh" content="30">
-</head>
-
-<body>
-
-    <img src="" id="streetViewImage" alt="Google Street View" width="1680" height="1050">
-
-    <script type="text/javascript">
-        var API_KEY = "AIzaSyBveTDfzmnHsH8GV9e0pKkPTpGXA__r_HI";
-        var BASE_URL = "http://maps.googleapis.com/maps/api/streetview?size=640x400&location=%LATITUDE,%LONGITUDE&fov=90&heading=%HEADING&pitch=0&key=" + API_KEY;
-        var MAP_BOUNDS = {minLatitude:47.481560,
-                          maxLatitude:47.517861,
-                          minLongitude:18.964263,
-                          maxLongitude:19.024387};        
-        
-        var randomLatitude = MAP_BOUNDS.minLatitude + (MAP_BOUNDS.maxLatitude - MAP_BOUNDS.minLatitude) * Math.random();
-        var randomLongitude = MAP_BOUNDS.minLongitude + (MAP_BOUNDS.maxLongitude - MAP_BOUNDS.minLongitude) * Math.random();
-        var randomHeading = 360 * Math.random();
-        
-        var url = BASE_URL;
-        url = url.replace("%LATITUDE", randomLatitude);
-        url = url.replace("%LONGITUDE", randomLongitude);
-        url = url.replace("%HEADING", randomHeading);
-        
-        document.getElementById("streetViewImage").src = url;
-        
+    <head>
+        <title>StreetView SlideShow</title>
+        <style>
+            html, body {
+                height: 100%;
+                width: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+            .pano {
+                position: absolute;
+                height: 100%;
+                width: 100%;
+                margin: 0px;
+                padding: 0px;
+                left: 0px;
+                top: 0px;
+                opacity: 1;
+            }
+            .pano_top {
+                z-index: 0;
+            }
+            .pano_bottom {
+                z-index: -1;
+            }
+            .desc {
+                position: absolute;
+                left: 5%;
+                top: 5%;
+                padding: 1%;
+                color: white;
+                text-shadow: 0 0 3px #000000;
+                font-family: sans-serif;
+                font-size: xx-large;
+                background-color: #dddddd;
+            }
+            .desc_top {
+                z-index: 1;
+            }
+            .desc_bottom {
+                z-index: -2;
+            }
+            #map-canvas {
+                position: absolute;
+                height: 25%;
+                width: 25%;
+                left: 75%;
+                top: 75%;
+                opacity: 0.7;
+                z-index: 2;
+            }
+        </style>
+        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBveTDfzmnHsH8GV9e0pKkPTpGXA__r_HI"></script>
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script type="text/javascript">
+            var PANO_0_ID = "pano0";
+            var PANO_1_ID = "pano1";
+            var DESC_0_ID = "desc0";
+            var DESC_1_ID = "desc1";
+            var MAP_ID = "map-canvas";
+            var PANO_0_SELECTOR = "#" + PANO_0_ID;
+            var PANO_1_SELECTOR = "#" + PANO_1_ID;
+            var DESC_0_SELECTOR = "#" + DESC_0_ID;
+            var DESC_1_SELECTOR = "#" + DESC_1_ID;
+            var MAP_BOUNDS = {minLatitude:47.481560,
+                              maxLatitude:47.517861,
+                              minLongitude:18.964263,
+                              maxLongitude:19.024387};
 /*
-    window.onload = function () {
-        'use strict';
-        var millisecondsBeforeRefresh = 5000; //Adjust time here
-        window.setTimeout(function () {
-            //refresh the entire document
-            document.location.reload();
-        }, millisecondsBeforeRefresh);
-    };
-*/        
-        
-    </script>
-        
-</body>
+            var MAP_BOUNDS = {minLatitude:46.509856,
+                              maxLatitude:46.535443,
+                              minLongitude:20.161510,
+                              maxLongitude:20.213223};
+            var MAP_BOUNDS = {minLatitude:46.286187,
+                              maxLatitude:47.749865,
+                              minLongitude:17.367016,
+                              maxLongitude:21.067220};
+*/
+            var TOP_PANO_CLASS = "pano pano_top";
+            var BOTTOM_PANO_CLASS = "pano pano_bottom";
+            var TOP_DESC_CLASS = "desc desc_top";
+            var BOTTOM_DESC_CLASS = "desc desc_bottom";
+            var SWAP_PANORAMA_INTERVAL = 5000;
+            var PANORAMA_FADE_OUT_SPEED = 2000;
+            var ANIMATE_PANORAMA_INTERVAL = 150;
+            var ANIMATE_PANORAMA_HEADING_STEP = 0.2;
+            var ANIMATE_PANORAMA_ZOOM_STEP = 10;
+            
+            var pano0Element;
+            var pano1Element;
+            var desc0Element;
+            var desc1Element;
+            var mapElement;
+            var mapOptions;
+            var actualPanoramaIndex;
+            var randomPanoramaInterval;
+            var animatePanoramaInterval;
+            var map;
+            var panorama0;
+            var panorama1;
+            
+            function initialize() {
+                pano0Element = document.getElementById(PANO_0_ID);
+                pano1Element = document.getElementById(PANO_1_ID);
+                desc0Element = document.getElementById(DESC_0_ID);
+                desc1Element = document.getElementById(DESC_1_ID);
+                mapElement = document.getElementById(MAP_ID);
+                
+                mapOptions = {
+                    zoom: 15,
+                    disableDefaultUI: true,
+                    disableDoubleClickZoom: true,
+                    draggable: false,
+                    streetViewControl: true
+                };
+                
+                map = new google.maps.Map(mapElement, mapOptions);
+                
+                actualPanoramaIndex = 0;
+                
+                pano0Element.className = TOP_PANO_CLASS;
+                pano1Element.className = BOTTOM_PANO_CLASS;
+                desc0Element.className = TOP_DESC_CLASS;
+                desc1Element.className = BOTTOM_DESC_CLASS;
+                
+                getRandomPanorama(0);
+                getRandomPanorama(1);
+                
+                swapPanorama();
+                
+                randomPanoramaInterval = window.setInterval(
+                    function () {
+                        swapPanorama();
+                    },
+                    SWAP_PANORAMA_INTERVAL);
+            }
+            
+            function swapPanorama() {
+                var topPanoSelector = (actualPanoramaIndex == 0) ? PANO_0_SELECTOR : PANO_1_SELECTOR;
+                
+                stopAnimatePanorama();
+                $(topPanoSelector).fadeOut(PANORAMA_FADE_OUT_SPEED, swapPanoramaCallback);
+            }
+            
+            function swapPanoramaCallback() {
+                var topPanoSelector = (actualPanoramaIndex == 0) ? PANO_0_SELECTOR : PANO_1_SELECTOR;
+                var topPanoElement = (actualPanoramaIndex == 0) ? pano0Element : pano1Element;
+                var bottomPanoElement = (actualPanoramaIndex == 0) ? pano1Element : pano0Element;
+                var topDescElement = (actualPanoramaIndex == 0) ? desc0Element : desc1Element;
+                var bottomDescElement = (actualPanoramaIndex == 0) ? desc1Element : desc0Element;
+                
+                topPanoElement.className = BOTTOM_PANO_CLASS;
+                bottomPanoElement.className = TOP_PANO_CLASS;
+                topDescElement.className = BOTTOM_DESC_CLASS;
+                bottomDescElement.className = TOP_DESC_CLASS;
+                
+                $(topPanoSelector).show();
+                
+                getRandomPanorama(actualPanoramaIndex);
+                
+                actualPanoramaIndex = (actualPanoramaIndex + 1) % 2;
+                
+                var actualPanorama = (actualPanoramaIndex == 0) ? panorama0 : panorama1;
+                map.setCenter(actualPanorama.getPosition());
+                map.setStreetView(actualPanorama);
+                
+                startAnimatePanorama();
+            }
+            
+            function startAnimatePanorama() {
+                var animPano = (actualPanoramaIndex == 0) ? panorama0 : panorama1;
+                var randomAnimationIndex = Math.floor(Math.random() * 2);
+                
+                animatePanoramaInterval = window.setInterval(
+                    function () {
+                        var pov = animPano.getPov();
+                        var zoom = animPano.getZoom();
+                        
+                        switch(randomAnimationIndex) {
+                            case 0:
+                                pov.heading += ANIMATE_PANORAMA_HEADING_STEP;
+                                animPano.setPov(pov);
+                                break;
+                            case 1:
+                                pov.heading -= ANIMATE_PANORAMA_HEADING_STEP;
+                                animPano.setPov(pov);
+                                break;
+/*
+                            case 2:
+                                zoom += ANIMATE_PANORAMA_ZOOM_STEP;
+                                animPano.setZoom(zoom);
+                                break;
+                            case 3:
+                                zoom -= ANIMATE_PANORAMA_ZOOM_STEP;
+                                animPano.setZoom(zoom);
+                                break;
+*/
+                        }
+                    },
+                    ANIMATE_PANORAMA_INTERVAL);
+            }
+            
+            function stopAnimatePanorama() {
+                if (animatePanoramaInterval !== undefined) {
+                    window.clearInterval(animatePanoramaInterval);
+                }
+            }
+            
+            function getRandomPanorama(index) {
+                var randomLatitude = MAP_BOUNDS.minLatitude + (MAP_BOUNDS.maxLatitude - MAP_BOUNDS.minLatitude) * Math.random();
+                var randomLongitude = MAP_BOUNDS.minLongitude + (MAP_BOUNDS.maxLongitude - MAP_BOUNDS.minLongitude) * Math.random();
+                var randomHeading = 360 * Math.random();
+                var randomLocation = {lat: randomLatitude, lng: randomLongitude};
+                var initialRadius = 50;
+                
+                getNearestPanoramaByLocation(index, randomLocation, randomHeading, initialRadius);
+            }
+            
+            function getNearestPanoramaByLocation(index, location, heading, radius) {
+                var panoIndex = index;
+                var panoLocation = location;
+                var panoHeading = heading;
+                var panoRadius = radius;
+                var streetViewService = new google.maps.StreetViewService();
+                streetViewService.getPanoramaByLocation(location, radius, function (data, status) {getNearestPanoramaByLocationCallback(data, status, index, location, heading, radius)});
+            }
+            
+            function getNearestPanoramaByLocationCallback(data, status, index, location, heading, radius) {
+                if (status == google.maps.StreetViewStatus.OK) {
+                    setPanorama(index, data, heading);
+                }
+                else {
+                    var extendedRadius = radius * 2;
+                    getNearestPanoramaByLocation(index, location, heading, extendedRadius);
+                }
+            }
+            
+            function setPanorama(index, data, heading) {
+                var panoramaOptions = {
+                    pano: data.location.pano,
+                    pov: {
+                        heading: heading,
+                        pitch: 0
+                    },
+                    disableDefaultUI: true,
+                    scrollwheel: false,
+                    visible: true
+                };
+                
+                if (index == 0) {
+                    panorama0 = new google.maps.StreetViewPanorama(pano0Element, panoramaOptions);
+                    desc0Element.innerHTML = data.location.description;
+                }
+                else {
+                    panorama1 = new google.maps.StreetViewPanorama(pano1Element, panoramaOptions);
+                    desc1Element.innerHTML = data.location.description;
+                }
+            }
+            
+            google.maps.event.addDomListener(window, 'load', initialize);
+        </script>
+    </head>
+    <body>
+        <div id="pano0"></div>
+        <div id="pano1"></div>
+        <div id="desc0"></div>
+        <div id="desc1"></div>
+        <div id="map-canvas"></div>
+    </body>
 </html>

@@ -9,22 +9,15 @@
                 margin: 0px;
                 padding: 0px;
             }
-            table.settings {
-                border: 1px solid black;
+            section {
+                height: 100%;
+                margin-right: 350px;
             }
-            td.map {
-                width: 80%;
-                border: 1px solid black;
-            }
-            td.settings {
-                width: 20%;
-                vertical-align: top;
+            aside {
+                float: right;
+                width: 350px;
                 font-family: sans-serif;
                 font-size: small;
-            }
-            div.controls {
-                margin-top: 20px;
-                border: 1px solid black;
             }
             .header {
                 font-family: sans-serif;
@@ -32,10 +25,16 @@
                 font-weight: bold;
                 text-transform: uppercase;
             }
+            .panel {
+                margin: 5px;
+                padding: 5px;
+                border: 1px solid black;
+            }
             #map-canvas {
                 height: 100%;
                 width: 100%;
             }
+
         </style>
         <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBveTDfzmnHsH8GV9e0pKkPTpGXA__r_HI"></script>
         <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
@@ -96,18 +95,20 @@
                 animatePanoramaZoomStepElement.setAttribute("value", settings.animatePanoramaZoomStep);
             }
             
-            function actionSave(form) {
+            function actionSave() {
                 var settings = getSettingsFromLocalStorage();
-                
-                settings.swapPanoramaInterval = Number.parseInt(form.swapPanoramaInterval.value);
-                settings.panoramaFadeOutSpeed = Number.parseInt(form.panoramaFadeOutSpeed.value);
-                settings.animatePanoramaInterval = Number.parseInt(form.animatePanoramaInterval.value);
-                settings.animatePanoramaHeadingStep = Number.parseFloat(form.animatePanoramaHeadingStep.value);
-                settings.animatePanoramaZoomStep = Number.parseInt(form.animatePanoramaZoomStep.value);
-                
+
+                settings.swapPanoramaInterval = parseInt(swapPanoramaIntervalElement.value);
+                settings.panoramaFadeOutSpeed = parseInt(panoramaFadeOutSpeedElement.value);
+                settings.animatePanoramaInterval = parseInt(animatePanoramaIntervalElement.value);
+                settings.animatePanoramaHeadingStep = parseFloat(animatePanoramaHeadingStepElement.value);
+                settings.animatePanoramaZoomStep = parseInt(animatePanoramaZoomStepElement.value);
+
                 setSettingsToLocalStorage(settings);
                 
                 setBoundsToLocalStorage(rectangle.getBounds());
+
+                window.location.reload();
                 
                 return true;
             }
@@ -115,7 +116,9 @@
             function actionReset() {
                 removeBoundsFromLocalStorage();
                 removeSettingsFromLocalStorage();
-                
+
+                window.location.reload();
+
                 return true;
             }
             
@@ -132,59 +135,63 @@
                 
                 return true;
             }
+
+            function actionStreetViewSlideShow() {
+                //window.location.href = "StreetViewSlideShowSettings.html";
+                window.location.assign("StreetViewSlideShow.html");
+
+                return true;
+            }
             
             google.maps.event.addDomListener(window, 'load', initialize);
         </script>
     </head>
     <body>
-        <table>
-            <tr>
-                <td class="map">
-                    <div id="map-canvas"></div>
-                </td>
-                <td class="settings">
-                    <form>
-                        <table class="settings">
-                            <tr>
-                                <td class="header">Settings</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>SWAP_PANORAMA_INTERVAL</td>
-                                <td><input type="text" id="swapPanoramaInterval" name="swapPanoramaInterval" size="4"></td>
-                            </tr>
-                            <tr>
-                                <td>PANORAMA_FADE_OUT_SPEED</td>
-                                <td><input type="text" id="panoramaFadeOutSpeed" name="panoramaFadeOutSpeed" size="4"></td>
-                            </tr>
-                            <tr>
-                                <td>ANIMATE_PANORAMA_INTERVAL</td>
-                                <td><input type="text" id="animatePanoramaInterval" name="animatePanoramaInterval" size="4"></td>
-                            </tr>
-                            <tr>
-                                <td>ANIMATE_PANORAMA_HEADING_STEP</td>
-                                <td><input type="text" id="animatePanoramaHeadingStep" name="animatePanoramaHeadingStep" size="4"></td>
-                            </tr>
-                            <tr>
-                                <td>ANIMATE_PANORAMA_ZOOM_STEP</td>
-                                <td><input type="text" id="animatePanoramaZoomStep" name="animatePanoramaZoomStep" size="4"></td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <input type="submit" value="Save" onclick="actionSave(this.form);">
-                                    <input type="submit" value="Reset" onclick="actionReset();">
-                                </td>
-                                <td></td>
-                            </tr>
-                        </table>
-                    </form>
-                    <div class="controls">
-                        <div class="header">Controls</div>
-                        <input type="button" value="Center" onclick="actionCenter();">
-                        <input type="button" value="Get bounds" onclick="actionGetBounds();">
-                    </div>
-                </td>
-            </tr>
-        </table>
+        <aside>
+            <div class="panel">
+                <div class="header">StreetViewSlideShow</div>
+                <input type="button" value="<<<" onclick="actionStreetViewSlideShow();">
+            </div>
+            <div class="panel">
+                <div class="header">Settings</div>
+                <table>
+                    <tr>
+                        <td>SWAP_PANORAMA_INTERVAL</td>
+                        <td><input type="text" id="swapPanoramaInterval" name="swapPanoramaInterval" size="4"></td>
+                    </tr>
+                    <tr>
+                        <td>PANORAMA_FADE_OUT_SPEED</td>
+                        <td><input type="text" id="panoramaFadeOutSpeed" name="panoramaFadeOutSpeed" size="4"></td>
+                    </tr>
+                    <tr>
+                        <td>ANIMATE_PANORAMA_INTERVAL</td>
+                        <td><input type="text" id="animatePanoramaInterval" name="animatePanoramaInterval" size="4"></td>
+                    </tr>
+                    <tr>
+                        <td>ANIMATE_PANORAMA_HEADING_STEP</td>
+                        <td><input type="text" id="animatePanoramaHeadingStep" name="animatePanoramaHeadingStep" size="4"></td>
+                    </tr>
+                    <tr>
+                        <td>ANIMATE_PANORAMA_ZOOM_STEP</td>
+                        <td><input type="text" id="animatePanoramaZoomStep" name="animatePanoramaZoomStep" size="4"></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="button" value="Save" onclick="actionSave();">
+                            <input type="button" value="Reset" onclick="actionReset();">
+                        </td>
+                        <td></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="panel">
+                <div class="header">Controls</div>
+                <input type="button" value="Center" onclick="actionCenter();">
+                <input type="button" value="Get bounds" onclick="actionGetBounds();">
+            </div>
+        </aside>
+        <section>
+            <div id="map-canvas"></div>
+        </section>
     </body>
 </html>
