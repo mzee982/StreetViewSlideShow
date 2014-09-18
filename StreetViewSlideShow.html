@@ -51,48 +51,50 @@
                 opacity: 0.7;
                 z-index: 2;
             }
+            #settings {
+                position: fixed;
+                top: 0px;
+                right: 0px;
+                opacity: 0.1;
+                z-index: 2;
+                cursor: pointer;
+                padding: 5px;
+                margin: 5px;
+                border-radius: 10px;
+                font-family: sans-serif;
+                font-size: medium;
+                color: white;
+                text-shadow: 0 0 3px #000000;
+                background-color: #aaaaaa;
+            }
         </style>
         <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBveTDfzmnHsH8GV9e0pKkPTpGXA__r_HI"></script>
         <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script type="text/javascript" src="common.js"></script>
         <script type="text/javascript">
             var PANO_0_ID = "pano0";
             var PANO_1_ID = "pano1";
             var DESC_0_ID = "desc0";
             var DESC_1_ID = "desc1";
             var MAP_ID = "map-canvas";
+            var SETTINGS_ID = "settings";
             var PANO_0_SELECTOR = "#" + PANO_0_ID;
             var PANO_1_SELECTOR = "#" + PANO_1_ID;
             var DESC_0_SELECTOR = "#" + DESC_0_ID;
             var DESC_1_SELECTOR = "#" + DESC_1_ID;
-            var MAP_BOUNDS = {minLatitude:47.481560,
-                              maxLatitude:47.517861,
-                              minLongitude:18.964263,
-                              maxLongitude:19.024387};
-/*
-            var MAP_BOUNDS = {minLatitude:46.509856,
-                              maxLatitude:46.535443,
-                              minLongitude:20.161510,
-                              maxLongitude:20.213223};
-            var MAP_BOUNDS = {minLatitude:46.286187,
-                              maxLatitude:47.749865,
-                              minLongitude:17.367016,
-                              maxLongitude:21.067220};
-*/
+            var SETTINGS_SELECTOR = "#" + SETTINGS_ID;
             var TOP_PANO_CLASS = "pano pano_top";
             var BOTTOM_PANO_CLASS = "pano pano_bottom";
             var TOP_DESC_CLASS = "desc desc_top";
             var BOTTOM_DESC_CLASS = "desc desc_bottom";
-            var SWAP_PANORAMA_INTERVAL = 5000;
-            var PANORAMA_FADE_OUT_SPEED = 2000;
-            var ANIMATE_PANORAMA_INTERVAL = 150;
-            var ANIMATE_PANORAMA_HEADING_STEP = 0.2;
-            var ANIMATE_PANORAMA_ZOOM_STEP = 10;
             
             var pano0Element;
             var pano1Element;
             var desc0Element;
             var desc1Element;
             var mapElement;
+            var bounds;
+            var settings;
             var mapOptions;
             var actualPanoramaIndex;
             var randomPanoramaInterval;
@@ -107,9 +109,11 @@
                 desc0Element = document.getElementById(DESC_0_ID);
                 desc1Element = document.getElementById(DESC_1_ID);
                 mapElement = document.getElementById(MAP_ID);
+
+                bounds = getBoundsFromLocalStorage();
+                settings = getSettingsFromLocalStorage();
                 
                 mapOptions = {
-                    zoom: 15,
                     disableDefaultUI: true,
                     disableDoubleClickZoom: true,
                     draggable: false,
@@ -117,6 +121,7 @@
                 };
                 
                 map = new google.maps.Map(mapElement, mapOptions);
+                map.fitBounds(bounds);
                 
                 actualPanoramaIndex = 0;
                 
@@ -134,14 +139,14 @@
                     function () {
                         swapPanorama();
                     },
-                    SWAP_PANORAMA_INTERVAL);
+                    settings.swapPanoramaInterval);
             }
             
             function swapPanorama() {
                 var topPanoSelector = (actualPanoramaIndex == 0) ? PANO_0_SELECTOR : PANO_1_SELECTOR;
                 
                 stopAnimatePanorama();
-                $(topPanoSelector).fadeOut(PANORAMA_FADE_OUT_SPEED, swapPanoramaCallback);
+                $(topPanoSelector).fadeOut(settings.panoramaFadeOutSpeed, swapPanoramaCallback);
             }
             
             function swapPanoramaCallback() {
@@ -163,43 +168,44 @@
                 actualPanoramaIndex = (actualPanoramaIndex + 1) % 2;
                 
                 var actualPanorama = (actualPanoramaIndex == 0) ? panorama0 : panorama1;
-                map.setCenter(actualPanorama.getPosition());
                 map.setStreetView(actualPanorama);
                 
                 startAnimatePanorama();
             }
             
             function startAnimatePanorama() {
-                var animPano = (actualPanoramaIndex == 0) ? panorama0 : panorama1;
-                var randomAnimationIndex = Math.floor(Math.random() * 2);
-                
-                animatePanoramaInterval = window.setInterval(
-                    function () {
-                        var pov = animPano.getPov();
-                        var zoom = animPano.getZoom();
-                        
-                        switch(randomAnimationIndex) {
-                            case 0:
-                                pov.heading += ANIMATE_PANORAMA_HEADING_STEP;
-                                animPano.setPov(pov);
-                                break;
-                            case 1:
-                                pov.heading -= ANIMATE_PANORAMA_HEADING_STEP;
-                                animPano.setPov(pov);
-                                break;
-/*
-                            case 2:
-                                zoom += ANIMATE_PANORAMA_ZOOM_STEP;
-                                animPano.setZoom(zoom);
-                                break;
-                            case 3:
-                                zoom -= ANIMATE_PANORAMA_ZOOM_STEP;
-                                animPano.setZoom(zoom);
-                                break;
-*/
-                        }
-                    },
-                    ANIMATE_PANORAMA_INTERVAL);
+                if (settings.animatePanoramaInterval > 0) {
+                    var animPano = (actualPanoramaIndex == 0) ? panorama0 : panorama1;
+                    var randomAnimationIndex = Math.floor(Math.random() * 2);
+
+                    animatePanoramaInterval = window.setInterval(
+                            function () {
+                                var pov = animPano.getPov();
+                                var zoom = animPano.getZoom();
+
+                                switch(randomAnimationIndex) {
+                                    case 0:
+                                        pov.heading += settings.animatePanoramaHeadingStep;
+                                        animPano.setPov(pov);
+                                        break;
+                                    case 1:
+                                        pov.heading -= settings.animatePanoramaHeadingStep;
+                                        animPano.setPov(pov);
+                                        break;
+                                    /*
+                                     case 2:
+                                     zoom += settings.animatePanoramaZoomStep;
+                                     animPano.setZoom(zoom);
+                                     break;
+                                     case 3:
+                                     zoom -= settings.animatePanoramaZoomStep;
+                                     animPano.setZoom(zoom);
+                                     break;
+                                     */
+                                }
+                            },
+                            settings.animatePanoramaInterval);
+                }
             }
             
             function stopAnimatePanorama() {
@@ -209,8 +215,8 @@
             }
             
             function getRandomPanorama(index) {
-                var randomLatitude = MAP_BOUNDS.minLatitude + (MAP_BOUNDS.maxLatitude - MAP_BOUNDS.minLatitude) * Math.random();
-                var randomLongitude = MAP_BOUNDS.minLongitude + (MAP_BOUNDS.maxLongitude - MAP_BOUNDS.minLongitude) * Math.random();
+                var randomLatitude = bounds.getSouthWest().lat() + (bounds.getNorthEast().lat() - bounds.getSouthWest().lat()) * Math.random();
+                var randomLongitude = bounds.getSouthWest().lng() + (bounds.getNorthEast().lng() - bounds.getSouthWest().lng()) * Math.random();
                 var randomHeading = 360 * Math.random();
                 var randomLocation = {lat: randomLatitude, lng: randomLongitude};
                 var initialRadius = 50;
@@ -252,11 +258,42 @@
                 if (index == 0) {
                     panorama0 = new google.maps.StreetViewPanorama(pano0Element, panoramaOptions);
                     desc0Element.innerHTML = data.location.description;
+                    doPanoramaDomCleanup(pano0Element);
                 }
                 else {
                     panorama1 = new google.maps.StreetViewPanorama(pano1Element, panoramaOptions);
                     desc1Element.innerHTML = data.location.description;
+                    doPanoramaDomCleanup(pano1Element);
                 }
+            }
+            
+            function doPanoramaDomCleanup(panoElement) {
+                var gmStyleElements = panoElement.getElementsByClassName("gm-style");
+
+                for (var i = 0; i < gmStyleElements.length; i++) {
+                    gmStyleElements[i].childNodes[1].style.display = "none";
+                    gmStyleElements[i].childNodes[2].style.display = "none";
+                    gmStyleElements[i].childNodes[5].style.display = "none";
+                    gmStyleElements[i].childNodes[9].style.display = "none";
+                }
+            }
+
+            function fadeInSettings() {
+                $(SETTINGS_SELECTOR).animate({opacity:'1'}, "medium");
+
+                return true;
+            }
+
+            function fadeOutSettings() {
+                $(SETTINGS_SELECTOR).animate({opacity:'0.1'}, "medium");
+
+                return true;
+            }
+
+            function gotoSettings() {
+                window.location.assign("StreetViewSlideShowSettings.html");
+
+                return true;
             }
             
             google.maps.event.addDomListener(window, 'load', initialize);
@@ -268,5 +305,6 @@
         <div id="desc0"></div>
         <div id="desc1"></div>
         <div id="map-canvas"></div>
+        <div id="settings" onmouseover="fadeInSettings();" onmouseout="fadeOutSettings();" onclick="gotoSettings();">Settings</div>
     </body>
 </html>
