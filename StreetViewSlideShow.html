@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>StreetView SlideShow</title>
+    <meta http-equiv="refresh" content="30">
+</head>
+
+<body>
+
+    <img src="" id="streetViewImage" alt="Google Street View" width="1680" height="1050">
+
+    <script type="text/javascript">
+        var API_KEY = "AIzaSyBveTDfzmnHsH8GV9e0pKkPTpGXA__r_HI";
+        var BASE_URL = "http://maps.googleapis.com/maps/api/streetview?size=640x400&location=%LATITUDE,%LONGITUDE&fov=90&heading=%HEADING&pitch=0&key=" + API_KEY;
+        var MAP_BOUNDS = {minLatitude:47.481560,
+                          maxLatitude:47.517861,
+                          minLongitude:18.964263,
+                          maxLongitude:19.024387};        
+        
+        var randomLatitude = MAP_BOUNDS.minLatitude + (MAP_BOUNDS.maxLatitude - MAP_BOUNDS.minLatitude) * Math.random();
+        var randomLongitude = MAP_BOUNDS.minLongitude + (MAP_BOUNDS.maxLongitude - MAP_BOUNDS.minLongitude) * Math.random();
+        var randomHeading = 360 * Math.random();
+        
+        var url = BASE_URL;
+        url = url.replace("%LATITUDE", randomLatitude);
+        url = url.replace("%LONGITUDE", randomLongitude);
+        url = url.replace("%HEADING", randomHeading);
+        
+        document.getElementById("streetViewImage").src = url;
+        
+/*
+    window.onload = function () {
+        'use strict';
+        var millisecondsBeforeRefresh = 5000; //Adjust time here
+        window.setTimeout(function () {
+            //refresh the entire document
+            document.location.reload();
+        }, millisecondsBeforeRefresh);
+    };
+*/        
+        
+    </script>
+        
+</body>
+</html>
