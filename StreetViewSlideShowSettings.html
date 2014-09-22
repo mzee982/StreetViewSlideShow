@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>StreetView SlideShow Settings</title>
+        <link rel="stylesheet" type="text/css" href="common.css">
         <style>
             html, body, table {
                 height: 100%;
@@ -19,22 +20,10 @@
                 font-family: sans-serif;
                 font-size: small;
             }
-            .header {
-                font-family: sans-serif;
-                font-size: medium;
-                font-weight: bold;
-                text-transform: uppercase;
-            }
-            .panel {
-                margin: 5px;
-                padding: 5px;
-                border: 1px solid black;
-            }
             #map-canvas {
                 height: 100%;
                 width: 100%;
             }
-
         </style>
         <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBveTDfzmnHsH8GV9e0pKkPTpGXA__r_HI"></script>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/json2/20130526/json2.min.js"></script>
@@ -139,7 +128,6 @@
             }
 
             function actionStreetViewSlideShow() {
-                //window.location.href = "StreetViewSlideShowSettings.html";
                 window.location.assign("StreetViewSlideShow.html");
 
                 return true;
@@ -152,35 +140,35 @@
         <aside>
             <div class="panel">
                 <div class="header">StreetViewSlideShow</div>
-                <input type="button" value="<<<" onclick="actionStreetViewSlideShow();">
+                <input class="flatbutton" type="button" value="<<<" onclick="actionStreetViewSlideShow();">
             </div>
             <div class="panel">
                 <div class="header">Settings</div>
                 <table>
                     <tr>
                         <td>SWAP_PANORAMA_INTERVAL</td>
-                        <td><input type="text" id="swapPanoramaInterval" name="swapPanoramaInterval" size="4"></td>
+                        <td><input class="flattext" type="text" id="swapPanoramaInterval" name="swapPanoramaInterval" size="4"></td>
                     </tr>
                     <tr>
                         <td>PANORAMA_FADE_OUT_SPEED</td>
-                        <td><input type="text" id="panoramaFadeOutSpeed" name="panoramaFadeOutSpeed" size="4"></td>
+                        <td><input class="flattext" type="text" id="panoramaFadeOutSpeed" name="panoramaFadeOutSpeed" size="4"></td>
                     </tr>
                     <tr>
                         <td>ANIMATE_PANORAMA_INTERVAL</td>
-                        <td><input type="text" id="animatePanoramaInterval" name="animatePanoramaInterval" size="4"></td>
+                        <td><input class="flattext" type="text" id="animatePanoramaInterval" name="animatePanoramaInterval" size="4"></td>
                     </tr>
                     <tr>
                         <td>ANIMATE_PANORAMA_HEADING_STEP</td>
-                        <td><input type="text" id="animatePanoramaHeadingStep" name="animatePanoramaHeadingStep" size="4"></td>
+                        <td><input class="flattext" type="text" id="animatePanoramaHeadingStep" name="animatePanoramaHeadingStep" size="4"></td>
                     </tr>
                     <tr>
                         <td>ANIMATE_PANORAMA_ZOOM_STEP</td>
-                        <td><input type="text" id="animatePanoramaZoomStep" name="animatePanoramaZoomStep" size="4"></td>
+                        <td><input class="flattext" type="text" id="animatePanoramaZoomStep" name="animatePanoramaZoomStep" size="4"></td>
                     </tr>
                     <tr>
                         <td>
-                            <input type="button" value="Save" onclick="actionSave();">
-                            <input type="button" value="Reset" onclick="actionReset();">
+                            <input class="flatbutton" type="button" value="Save" onclick="actionSave();">
+                            <input class="flatbutton" type="button" value="Reset" onclick="actionReset();">
                         </td>
                         <td></td>
                     </tr>
@@ -188,8 +176,8 @@
             </div>
             <div class="panel">
                 <div class="header">Controls</div>
-                <input type="button" value="Center" onclick="actionCenter();">
-                <input type="button" value="Get bounds" onclick="actionGetBounds();">
+                <input class="flatbutton" type="button" value="Center" onclick="actionCenter();">
+                <input class="flatbutton" type="button" value="Get bounds" onclick="actionGetBounds();">
             </div>
         </aside>
         <section>

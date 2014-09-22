@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>StreetView SlideShow</title>
+        <link rel="stylesheet" type="text/css" href="common.css">
         <style>
             html, body {
                 height: 100%;
@@ -53,19 +54,10 @@
             }
             #settings {
                 position: fixed;
-                top: 0px;
-                right: 0px;
-                opacity: 0.1;
+                top: 5px;
+                right: 5px;
                 z-index: 2;
-                cursor: pointer;
-                padding: 5px;
-                margin: 5px;
-                border-radius: 10px;
-                font-family: sans-serif;
-                font-size: medium;
-                color: white;
-                text-shadow: 0 0 3px #000000;
-                background-color: #aaaaaa;
+                opacity: 0.1;
             }
         </style>
         <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBveTDfzmnHsH8GV9e0pKkPTpGXA__r_HI"></script>
@@ -307,6 +299,6 @@
         <div id="desc0"></div>
         <div id="desc1"></div>
         <div id="map-canvas"></div>
-        <div id="settings" onmouseover="fadeInSettings();" onmouseout="fadeOutSettings();" onclick="gotoSettings();">Settings</div>
+        <input id="settings" class="flatbutton" type="button" value="Settings" onmouseover="fadeInSettings();" onmouseout="fadeOutSettings();" onclick="gotoSettings();">
     </body>
 </html>
