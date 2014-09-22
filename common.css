@@ -11,6 +11,18 @@
     border-radius: 2px;
     box-shadow: 1px 1px 1px #888888;
 }
+.desc {
+    position: absolute;
+    left: 5%;
+    top: 5%;
+    padding: 1%;
+    color: white;
+    text-shadow: 0 0 3px #000000;
+    font-family: sans-serif;
+    font-size: xx-large;
+    background-color: #dddddd;
+    border-radius: 5px;
+}
 input.flatbutton {
     cursor: pointer;
     padding: 5px 10px;

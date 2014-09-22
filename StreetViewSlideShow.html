@@ -26,21 +26,12 @@
             .pano_bottom {
                 z-index: -1;
             }
-            .desc {
-                position: absolute;
-                left: 5%;
-                top: 5%;
-                padding: 1%;
-                color: white;
-                text-shadow: 0 0 3px #000000;
-                font-family: sans-serif;
-                font-size: xx-large;
-                background-color: #dddddd;
-            }
             .desc_top {
+                opacity: 0;
                 z-index: 1;
             }
             .desc_bottom {
+                opacity: 0;
                 z-index: -2;
             }
             #map-canvas {
@@ -138,8 +129,13 @@
             
             function swapPanorama() {
                 var topPanoSelector = (actualPanoramaIndex == 0) ? PANO_0_SELECTOR : PANO_1_SELECTOR;
-                
+                var topDescSelector = (actualPanoramaIndex == 0) ? DESC_0_SELECTOR : DESC_1_SELECTOR;
+                var topDescElement = (actualPanoramaIndex == 0) ? desc0Element : desc1Element;
+
                 stopAnimatePanorama();
+
+                $(topDescSelector).fadeTo("slow", 0.0, function() {topDescElement.className = BOTTOM_DESC_CLASS;});
+
                 $(topPanoSelector).fadeOut(settings.panoramaFadeOutSpeed, swapPanoramaCallback);
             }
             
@@ -148,13 +144,14 @@
                 var topPanoElement = (actualPanoramaIndex == 0) ? pano0Element : pano1Element;
                 var bottomPanoElement = (actualPanoramaIndex == 0) ? pano1Element : pano0Element;
                 var topDescElement = (actualPanoramaIndex == 0) ? desc0Element : desc1Element;
+                var bottomDescSelector = (actualPanoramaIndex == 0) ? DESC_1_SELECTOR : DESC_0_SELECTOR;
                 var bottomDescElement = (actualPanoramaIndex == 0) ? desc1Element : desc0Element;
                 
                 topPanoElement.className = BOTTOM_PANO_CLASS;
                 bottomPanoElement.className = TOP_PANO_CLASS;
                 topDescElement.className = BOTTOM_DESC_CLASS;
                 bottomDescElement.className = TOP_DESC_CLASS;
-                
+
                 $(topPanoSelector).show();
                 
                 getRandomPanorama(actualPanoramaIndex);
@@ -163,7 +160,9 @@
                 
                 var actualPanorama = (actualPanoramaIndex == 0) ? panorama0 : panorama1;
                 map.setStreetView(actualPanorama);
-                
+
+                $(bottomDescSelector).fadeTo("slow", 1);
+
                 startAnimatePanorama();
             }
             
@@ -273,13 +272,13 @@
             }
 
             function fadeInSettings() {
-                $(SETTINGS_SELECTOR).animate({opacity:'1'}, "medium");
+                $(SETTINGS_SELECTOR).fadeTo("medium", 1);
 
                 return true;
             }
 
             function fadeOutSettings() {
-                $(SETTINGS_SELECTOR).animate({opacity:'0.1'}, "medium");
+                $(SETTINGS_SELECTOR).fadeTo("medium", 0.1);
 
                 return true;
             }
