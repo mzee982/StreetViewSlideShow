@@ -1,9 +1,11 @@
 var DEFAULT_BOUNDS = new google.maps.LatLngBounds(new google.maps.LatLng(47.481560, 18.964263), new google.maps.LatLng(47.517861, 19.024387));
+var DEFAULT_POLY = new google.maps.Polygon({paths: [{lat: 47.481560, lng: 18.964263}, {lat: 47.517861, lng: 18.964263}, {lat: 47.517861, lng: 19.024387}, {lat: 47.481560, lng: 19.024387}]});
 var DEFAULT_SETTINGS = {swapPanoramaInterval: 5000, panoramaFadeOutSpeed: 2000, animatePanoramaInterval: 150, animatePanoramaHeadingStep: 0.2, animatePanoramaZoomStep: 10};
 var BOUNDS_SOUTH_STORAGE_ID = "boundsSouth";
 var BOUNDS_WEST_STORAGE_ID = "boundsWest";
 var BOUNDS_NORTH_STORAGE_ID = "boundsNorth";
 var BOUNDS_EAST_STORAGE_ID = "boundsEast";
+var POLY_STORAGE_ID = "poly";
 var SWAP_PANORAMA_INTERVAL_STORAGE_ID = "swapPanoramaInterval";
 var PANORAMA_FADE_OUT_SPEED_STORAGE_ID = "panoramaFadeOutSpeed";
 var ANIMATE_PANORAMA_INTERVAL_STORAGE_ID = "animatePanoramaInterval";
@@ -91,4 +93,51 @@ function removeSettingsFromLocalStorage() {
     $.jStorage.deleteKey(ANIMATE_PANORAMA_INTERVAL_STORAGE_ID);
     $.jStorage.deleteKey(ANIMATE_PANORAMA_HEADING_STEP_STORAGE_ID);
     $.jStorage.deleteKey(ANIMATE_PANORAMA_ZOOM_STEP_STORAGE_ID);
+}
+
+function getPolyFromLocalStorage() {
+    var polyString = $.jStorage.get(POLY_STORAGE_ID);
+
+    if (polyString != null) {
+        var polyPath = [];
+        var latLngStringArray = polyString.split("|");
+
+        for (var i = 0; i < latLngStringArray.length; i++) {
+            var coordsStringArray = latLngStringArray[i].split(",");
+            var latLng = new google.maps.LatLng(parseFloat(coordsStringArray[0]), parseFloat(coordsStringArray[1]));
+            polyPath[polyPath.length] = latLng;
+        }
+
+        return new google.maps.Polygon({paths: polyPath});
+    }
+    else {
+        setPolyToLocalStorage(DEFAULT_POLY);
+        return DEFAULT_POLY;
+    }
+}
+
+function setPolyToLocalStorage(poly) {
+    var polyString = "";
+
+    poly.getPath().forEach(function(element, index) {
+        polyString += element.toUrlValue() + "|";
+    });
+
+    polyString = polyString.substr(0, polyString.length - 1);
+
+    $.jStorage.set(POLY_STORAGE_ID, polyString);
+}
+
+function removePolyFromLocalStorage() {
+    $.jStorage.deleteKey(POLY_STORAGE_ID);
+}
+
+function getBoundsOfPoly(poly) {
+    var bounds = new google.maps.LatLngBounds();
+
+    poly.getPath().forEach(function(element, index) {
+        bounds.extend(element);
+    });
+
+    return bounds;
 }

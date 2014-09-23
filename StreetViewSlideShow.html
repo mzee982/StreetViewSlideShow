@@ -51,7 +51,7 @@
                 opacity: 0.1;
             }
         </style>
-        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBveTDfzmnHsH8GV9e0pKkPTpGXA__r_HI"></script>
+        <script src="https://maps.googleapis.com/maps/api/js?libraries=geometry&key=AIzaSyBveTDfzmnHsH8GV9e0pKkPTpGXA__r_HI"></script>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/json2/20130526/json2.min.js"></script>
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/jStorage/0.4.4/jstorage.min.js"></script>
@@ -79,6 +79,7 @@
             var desc1Element;
             var mapElement;
             var bounds;
+            var poly;
             var settings;
             var mapOptions;
             var actualPanoramaIndex;
@@ -95,7 +96,7 @@
                 desc1Element = document.getElementById(DESC_1_ID);
                 mapElement = document.getElementById(MAP_ID);
 
-                bounds = getBoundsFromLocalStorage();
+                poly = getPolyFromLocalStorage();
                 settings = getSettingsFromLocalStorage();
                 
                 mapOptions = {
@@ -106,7 +107,7 @@
                 };
                 
                 map = new google.maps.Map(mapElement, mapOptions);
-                map.fitBounds(bounds);
+                map.fitBounds(getBoundsOfPoly(poly));
                 
                 actualPanoramaIndex = 0;
                 
@@ -208,20 +209,27 @@
             }
             
             function getRandomPanorama(index) {
-                var randomLatitude = bounds.getSouthWest().lat() + (bounds.getNorthEast().lat() - bounds.getSouthWest().lat()) * Math.random();
-                var randomLongitude = bounds.getSouthWest().lng() + (bounds.getNorthEast().lng() - bounds.getSouthWest().lng()) * Math.random();
+                var randomLatitude;
+                var randomLongitude;
+                var contains = false;
                 var randomHeading = 360 * Math.random();
-                var randomLocation = {lat: randomLatitude, lng: randomLongitude};
                 var initialRadius = 50;
-                
+                var bounds = getBoundsOfPoly(poly);
+
+                do {
+                    randomLatitude = bounds.getSouthWest().lat() + (bounds.getNorthEast().lat() - bounds.getSouthWest().lat()) * Math.random();
+                    randomLongitude = bounds.getSouthWest().lng() + (bounds.getNorthEast().lng() - bounds.getSouthWest().lng()) * Math.random();
+
+                    contains = google.maps.geometry.poly.containsLocation(new google.maps.LatLng(randomLatitude, randomLongitude), poly);
+                }
+                while (!contains);
+
+                var randomLocation = {lat: randomLatitude, lng: randomLongitude};
+
                 getNearestPanoramaByLocation(index, randomLocation, randomHeading, initialRadius);
             }
             
             function getNearestPanoramaByLocation(index, location, heading, radius) {
-                var panoIndex = index;
-                var panoLocation = location;
-                var panoHeading = heading;
-                var panoRadius = radius;
                 var streetViewService = new google.maps.StreetViewService();
                 streetViewService.getPanoramaByLocation(location, radius, function (data, status) {getNearestPanoramaByLocationCallback(data, status, index, location, heading, radius)});
             }

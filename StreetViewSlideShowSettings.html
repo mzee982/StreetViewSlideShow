@@ -45,9 +45,8 @@
             var animatePanoramaHeadingStepElement;
             var animatePanoramaZoomStepElement;
             var map;
-            var bounds;
-            var rectangle;
-            
+            var poly;
+
             function initialize() {
                 mapElement = document.getElementById(MAP_ID);
                 swapPanoramaIntervalElement = document.getElementById(SWAP_PANORAMA_INTERVAL_ID);
@@ -56,23 +55,31 @@
                 animatePanoramaHeadingStepElement = document.getElementById(ANIMATE_PANORAMA_HEADING_STEP_ID);
                 animatePanoramaZoomStepElement = document.getElementById(ANIMATE_PANORAMA_ZOOM_STEP_ID);
                 
-                bounds = getBoundsFromLocalStorage();
-                
+                poly = getPolyFromLocalStorage();
+
                 map = new google.maps.Map(mapElement);
-                map.fitBounds(bounds);
-                
-                rectangle = new google.maps.Rectangle({
-                    strokeColor: '#0000FF',
-                    strokeOpacity: 0.5,
+                map.fitBounds(getBoundsOfPoly(poly));
+
+                poly.setOptions({
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 0.8,
                     strokeWeight: 2,
-                    fillColor: '#0000FF',
-                    fillOpacity: 0.1,
-                    draggable: true,
+                    fillColor: '#FF0000',
+                    fillOpacity: 0.35,
                     editable: true,
-                    map: map,
-                    bounds: bounds
-                    });
-                
+                    map: map
+                });
+
+                google.maps.event.addListener(poly, 'rightclick', function(event) {
+                    if (event.vertex !== undefined) {
+                        var path = poly.getPath();
+                        path.removeAt(event.vertex);
+                        poly.setPath(path);
+                    };
+                });
+
+
+
                 populateSettingsForm();
             }
             
@@ -97,7 +104,7 @@
 
                 setSettingsToLocalStorage(settings);
                 
-                setBoundsToLocalStorage(rectangle.getBounds());
+                setPolyToLocalStorage(poly);
 
                 window.location.reload();
                 
@@ -106,6 +113,7 @@
             
             function actionReset() {
                 removeBoundsFromLocalStorage();
+                removePolyFromLocalStorage();
                 removeSettingsFromLocalStorage();
 
                 window.location.reload();
@@ -114,16 +122,22 @@
             }
             
             function actionCenter() {
-                map.fitBounds(rectangle.getBounds());
+                map.fitBounds(getBoundsOfPoly(poly));
                 
                 return true;
             }
             
             function actionGetBounds() {
-                bounds = map.getBounds();
+                var bounds = map.getBounds();
                 map.fitBounds(bounds);
-                rectangle.setBounds(bounds);
-                
+
+                poly.setPath(
+                    [{lat: bounds.getSouthWest().lat(), lng: bounds.getSouthWest().lng()},
+                    {lat: bounds.getNorthEast().lat(), lng: bounds.getSouthWest().lng()},
+                    {lat: bounds.getNorthEast().lat(), lng: bounds.getNorthEast().lng()},
+                    {lat: bounds.getSouthWest().lat(), lng: bounds.getNorthEast().lng()}]
+                );
+
                 return true;
             }
 
