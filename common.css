@@ -33,8 +33,25 @@ input.flatbutton {
 input.flatbutton:hover, input.flatbutton:focus {
     background: #dddddd;
 }
+input.flatbuttontoggle {
+    border:2px solid #eeeeee;
+}
+input.flatbuttontoggle:hover, input.flatbuttontoggle:focus {
+    background: #ffffff;
+    border:2px solid #000000;
+}
+input.flatbuttontoogleon {
+    border:2px solid #000000;
+}
 input.flattext {
     padding: 5px 5px;
     border:1px solid #000000;
     border-radius: 2px;
+}
+.toolbar {
+    margin: 5px;
+    display: none;
+    position: absolute;
+    left: 0px;
+    top: 0px;
 }

@@ -37,6 +37,17 @@
             var ANIMATE_PANORAMA_INTERVAL_ID = "animatePanoramaInterval";
             var ANIMATE_PANORAMA_HEADING_STEP_ID = "animatePanoramaHeadingStep";
             var ANIMATE_PANORAMA_ZOOM_STEP_ID = "animatePanoramaZoomStep";
+            var TOOLBAR_ID = "toolbar";
+            var TOOLBAR_ITEM_TOGGLE_DRAGGABLE_ID = "toolbar_toggle_draggable";
+            var TOOLBAR_ITEM_CENTER_ID = "toolbar_center";
+            var TOOLBAR_ITEM_REMOVE_POLYGON_ID = "toolbar_remove_polygon";
+            var TOOLBAR_ITEM_REMOVE_VERTEX_ID = "toolbar_remove_vertex";
+            var TOOLBAR_ITEM_CREATE_POLYGON_ID = "toolbar_create_polygon";
+            var TOOLBAR_ITEM_TOGGLE_DRAGGABLE_SELECTOR = "#" + TOOLBAR_ITEM_TOGGLE_DRAGGABLE_ID;
+            var TOOLBAR_ITEM_CENTER_SELECTOR = "#" + TOOLBAR_ITEM_CENTER_ID;
+            var TOOLBAR_ITEM_REMOVE_POLYGON_SELECTOR = "#" + TOOLBAR_ITEM_REMOVE_POLYGON_ID;
+            var TOOLBAR_ITEM_REMOVE_VERTEX_SELECTOR = "#" + TOOLBAR_ITEM_REMOVE_VERTEX_ID;
+            var TOOLBAR_ITEM_CREATE_POLYGON_SELECTOR = "#" + TOOLBAR_ITEM_CREATE_POLYGON_ID;
 
             var mapElement;
             var swapPanoramaIntervalElement;
@@ -46,6 +57,7 @@
             var animatePanoramaZoomStepElement;
             var map;
             var poly;
+            var toolbar;
 
             function initialize() {
                 mapElement = document.getElementById(MAP_ID);
@@ -54,35 +66,16 @@
                 animatePanoramaIntervalElement = document.getElementById(ANIMATE_PANORAMA_INTERVAL_ID);
                 animatePanoramaHeadingStepElement = document.getElementById(ANIMATE_PANORAMA_HEADING_STEP_ID);
                 animatePanoramaZoomStepElement = document.getElementById(ANIMATE_PANORAMA_ZOOM_STEP_ID);
-                
-                poly = getPolyFromLocalStorage();
 
-                map = new google.maps.Map(mapElement);
-                map.fitBounds(getBoundsOfPoly(poly));
+                toolbar = new Toolbar();
+                map = new Map(mapElement, toolbar);
+                poly = new Poly(mapElement, map, toolbar, getPolyFromLocalStorage());
 
-                poly.setOptions({
-                    strokeColor: '#FF0000',
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillColor: '#FF0000',
-                    fillOpacity: 0.35,
-                    editable: true,
-                    map: map
-                });
-
-                google.maps.event.addListener(poly, 'rightclick', function(event) {
-                    if (event.vertex !== undefined) {
-                        var path = poly.getPath();
-                        path.removeAt(event.vertex);
-                        poly.setPath(path);
-                    };
-                });
-
-
+                actionToolbarCenter();
 
                 populateSettingsForm();
             }
-            
+
             function populateSettingsForm() {
                 var settings = getSettingsFromLocalStorage();
                 
@@ -121,22 +114,17 @@
                 return true;
             }
             
-            function actionCenter() {
-                map.fitBounds(getBoundsOfPoly(poly));
-                
-                return true;
-            }
-            
             function actionGetBounds() {
                 var bounds = map.getBounds();
-                map.fitBounds(bounds);
 
-                poly.setPath(
-                    [{lat: bounds.getSouthWest().lat(), lng: bounds.getSouthWest().lng()},
-                    {lat: bounds.getNorthEast().lat(), lng: bounds.getSouthWest().lng()},
-                    {lat: bounds.getNorthEast().lat(), lng: bounds.getNorthEast().lng()},
-                    {lat: bounds.getSouthWest().lat(), lng: bounds.getNorthEast().lng()}]
-                );
+                if ((poly !== undefined) && (poly != null)) {
+                    poly.remove();
+                    poly = null;
+                }
+
+                poly = new Poly(mapElement, map, toolbar, bounds);
+
+                actionToolbarCenter();
 
                 return true;
             }
@@ -145,6 +133,342 @@
                 window.location.assign("StreetViewSlideShow.html");
 
                 return true;
+            }
+
+            function actionToolbarToggleDraggable() {
+                toolbar.hide();
+
+                poly.toggleDraggable();
+
+                return true;
+            }
+
+            function actionToolbarCenter() {
+                toolbar.hide();
+
+                if ((poly !== undefined) && (poly != null)) {
+                    map.fitBounds(getBoundsOfPoly(poly));
+                }
+
+                return true;
+            }
+
+            function actionToolbarRemovePolygon() {
+                toolbar.hide();
+
+                if ((poly !== undefined) && (poly != null)) {
+                    poly.remove();
+                    poly = null;
+                }
+
+                return true;
+            }
+
+            function actionToolbarRemoveVertex() {
+                toolbar.hide();
+
+                poly.removeVertex(toolbar.vertex);
+
+                return true;
+            }
+
+            function actionToolbarCreatePolygon() {
+                toolbar.hide();
+
+                if ((poly !== undefined) && (poly != null)) {
+                    poly.remove();
+                    poly = null;
+                }
+
+                poly = new Poly(mapElement, map, toolbar, toolbar.latLng);
+
+                poly.startDraw();
+
+                return true;
+            }
+
+            function Map(mapElement, toolbar) {
+                var map = new google.maps.Map(mapElement);
+                map.mapElement = mapElement;
+                map.toolbar = toolbar;
+                map.clickListener = undefined;
+
+                // Event listeners
+
+                map.clickListener = google.maps.event.addListener(map, 'click', function(event) {this.clickHandler(event);});
+
+                // New methods
+
+                map.clickHandler = function(event) {
+                    this.toolbar.show(event, this.mapElement, this, undefined);
+                };
+
+                return map;
+            }
+
+            function Poly(mapElement, map, toolbar, polyDefaults) {
+                var poly;
+
+                if (polyDefaults instanceof google.maps.Polygon) {
+                    poly = polyDefaults;
+                }
+
+                else if (polyDefaults instanceof google.maps.LatLngBounds) {
+                    poly = new google.maps.Polygon(
+                            {paths:
+                                [{lat: polyDefaults.getSouthWest().lat(), lng: polyDefaults.getSouthWest().lng()},
+                                {lat: polyDefaults.getNorthEast().lat(), lng: polyDefaults.getSouthWest().lng()},
+                                {lat: polyDefaults.getNorthEast().lat(), lng: polyDefaults.getNorthEast().lng()},
+                                {lat: polyDefaults.getSouthWest().lat(), lng: polyDefaults.getNorthEast().lng()}]
+                            }
+                    );
+                }
+
+                else if (polyDefaults instanceof google.maps.LatLng) {
+                    poly = new google.maps.Polygon({paths: [polyDefaults]});
+                }
+
+                else {
+                    poly = new google.maps.Polygon();
+                }
+
+                poly.STATE_READY = "STATE_READY";
+                poly.STATE_DRAWING = "STATE_DRAWING";
+                poly.mapElement = mapElement;
+                poly.map = map;
+                poly.toolbar = toolbar;
+                poly.clickListener = undefined;
+                poly.mouseOverListener = undefined;
+                poly.mouseMoveListener = undefined;
+                poly.mapMouseMoveListener = undefined;
+                poly.rightClickListener = undefined;
+                poly.notDraggableOptions = {
+                    strokeColor: '#000000',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: '#000000',
+                    fillOpacity: 0.35
+                };
+                poly.draggableOptions = {
+                    strokeColor: '#0000FF',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: '#0000FF',
+                    fillOpacity: 0.35
+                };
+
+                poly.setOptions({
+                    editable: true,
+                    draggable: false,
+                    clickable: true,
+                    map: poly.map
+                });
+                poly.setOptions(poly.notDraggableOptions);
+
+                poly.state = poly.STATE_READY;
+
+                // Event listeners
+
+                poly.clickListener = google.maps.event.addListener(poly, 'click', function(event) {this.clickHandler(event);});
+                poly.mouseOverListener = google.maps.event.addListener(poly, 'mouseover', function(event) {this.mouseOverHandler(event);});
+
+                // New methods
+
+                poly.clickHandler = function(event) {
+                    if (this.state == this.STATE_READY) {
+                        if ((event.vertex === undefined) || (this.getPath().getLength() > 3)) {
+                            this.toolbar.show(event, this.mapElement, this.map, this);
+                        }
+                    }
+                    else if (this.state == this.STATE_DRAWING) {
+                        if (event.vertex !== undefined) {
+                            this.getPath().push(event.latLng);
+                        }
+                    }
+                };
+
+                poly.mouseOverHandler = function(event) {
+                    if (this.state == this.STATE_READY) {
+                        if ((event.vertex !== undefined) && (this.getPath().getLength() > 3)) {
+                            this.toolbar.show(event, this.mapElement, this.map, this);
+                        }
+                    }
+                };
+
+                poly.mouseMoveHandler = function(event) {
+                    if (this.state == this.STATE_DRAWING) {
+                        var path = this.getPath();
+
+                        path.setAt(path.getLength() - 1, event.latLng);
+                    }
+                };
+
+                poly.mapMouseMoveHandler = function(event) {
+                    if (this.state == this.STATE_DRAWING) {
+                        var path = this.getPath();
+
+                        path.setAt(path.getLength() - 1, event.latLng);
+                    }
+                };
+
+                poly.rightClickHandler = function() {
+                    if (this.state == this.STATE_DRAWING) {
+                        this.getPath().pop();
+                        poly.finishDraw();
+                    }
+                };
+
+                poly.toggleDraggable = function() {
+                    this.setDraggable(!this.getDraggable());
+                    this.setOptions(this.getDraggable() ? this.draggableOptions : this.notDraggableOptions);
+                };
+
+                poly.removeVertex = function(vertex) {
+                    this.getPath().removeAt(vertex);
+                };
+
+                poly.remove = function() {
+                    google.maps.event.removeListener(this.clickListener);
+                    this.clickListener = undefined;
+                    google.maps.event.removeListener(this.mouseOverListener);
+                    this.mouseOverListener = undefined;
+
+                    this.setMap(null);
+                };
+
+                poly.startDraw = function() {
+                    this.state = this.STATE_DRAWING;
+
+                    var path = poly.getPath();
+
+                    path.push(path.getAt(0));
+
+                    var targetPoly = this;
+                    this.mouseMoveListener = google.maps.event.addListener(targetPoly, 'mousemove', function(event) {targetPoly.mouseMoveHandler(event);});
+                    this.mapMouseMoveListener = google.maps.event.addListener(this.map, 'mousemove', function(event) {targetPoly.mapMouseMoveHandler(event);});
+                    this.rightClickListener = google.maps.event.addListener(targetPoly, 'rightclick', function(event) {targetPoly.rightClickHandler(event);});
+                };
+
+                poly.finishDraw = function() {
+                    google.maps.event.removeListener(this.mouseMoveListener);
+                    this.mouseMoveListener = undefined;
+                    google.maps.event.removeListener(this.mapMouseMoveListener);
+                    this.mapMouseMoveListener = undefined;
+                    google.maps.event.removeListener(this.rightClickListener);
+                    this.rightClickListener = undefined;
+
+                    this.state = this.STATE_READY;
+                };
+
+                return poly;
+            }
+
+            function Toolbar() {
+                var toolbar = document.getElementById(TOOLBAR_ID);
+                toolbar.latLng = undefined;
+                toolbar.position = new google.maps.Point(0, 0);
+                toolbar.vertex = undefined;
+                toolbar.tolerance = 30;
+                toolbar.fadeSpeed = 300;
+                toolbar.mouseMoveListener = undefined;
+                toolbar.mouseDownListener = undefined;
+
+                // New methods
+
+                toolbar.show = function(mouseEvent, mapElement, map, poly) {
+                    $(this).stop(true, true);
+
+                    this.latLng = mouseEvent.latLng;
+                    this.position = fromLatLngToPoint(mapElement, map, this.latLng);
+                    this.vertex = mouseEvent.vertex;
+
+                    this.style.left = this.position.x + "px";
+                    this.style.top = this.position.y + "px";
+
+                    // Polygon vertex
+                    if (this.vertex !== undefined) {
+                        $(TOOLBAR_ITEM_TOGGLE_DRAGGABLE_SELECTOR, this).hide();
+                        $(TOOLBAR_ITEM_CENTER_SELECTOR, this).hide();
+                        $(TOOLBAR_ITEM_REMOVE_POLYGON_SELECTOR, this).hide();
+                        $(TOOLBAR_ITEM_REMOVE_VERTEX_SELECTOR, this).show();
+                        $(TOOLBAR_ITEM_CREATE_POLYGON_SELECTOR, this).hide();
+                    }
+
+                    // On the map
+                    else if (poly === undefined) {
+                        $(TOOLBAR_ITEM_TOGGLE_DRAGGABLE_SELECTOR, this).hide();
+                        $(TOOLBAR_ITEM_CENTER_SELECTOR, this).hide();
+                        $(TOOLBAR_ITEM_REMOVE_POLYGON_SELECTOR, this).hide();
+                        $(TOOLBAR_ITEM_REMOVE_VERTEX_SELECTOR, this).hide();
+                        $(TOOLBAR_ITEM_CREATE_POLYGON_SELECTOR, this).show();
+                    }
+
+                    // Inside the polygon
+                    else {
+                        $(TOOLBAR_ITEM_TOGGLE_DRAGGABLE_SELECTOR, this).toggleClass("flatbuttontoogleon", poly.getDraggable());
+                        $(TOOLBAR_ITEM_TOGGLE_DRAGGABLE_SELECTOR, this).show();
+                        $(TOOLBAR_ITEM_CENTER_SELECTOR, this).show();
+                        $(TOOLBAR_ITEM_REMOVE_POLYGON_SELECTOR, this).show();
+                        $(TOOLBAR_ITEM_REMOVE_VERTEX_SELECTOR, this).hide();
+                        $(TOOLBAR_ITEM_CREATE_POLYGON_SELECTOR, this).hide();
+                    }
+
+                    $(this).fadeIn(this.fadeSpeed);
+
+                    var targetToolbar = this;
+
+                    this.mouseMoveListener = google.maps.event.addDomListener(mapElement, 'mousemove', function(event) {targetToolbar.mouseMouseHandler(event);});
+
+                    if (poly === undefined) {
+                        this.mouseDownListener = google.maps.event.addDomListener(mapElement, 'mousedown', function(event) {targetToolbar.mouseDownHandler(event);});
+                    }
+                    else {
+                        this.mouseDownListener = google.maps.event.addListener(poly, 'mousedown', function(event) {targetToolbar.mouseDownHandler(event);});
+                    }
+                };
+
+                toolbar.mouseMouseHandler = function(event) {
+                    this.needToHide(new google.maps.Point(event.clientX, event.clientY));
+                };
+
+                toolbar.mouseDownHandler = function(event) {
+                    this.hide();
+                };
+
+                toolbar.needToHide = function(point) {
+                    var mouseX = point.x;
+                    var mouseY = point.y;
+                    var toolbarX = this.position.x;
+                    var toolbarY = this.position.y;
+                    var toolbarWidth = parseInt($(this).outerWidth());
+                    var toolbarHeight = parseInt($(this).outerHeight());
+                    var boundMinX = toolbarX - this.tolerance;
+                    var boundMaxX = toolbarX + toolbarWidth + this.tolerance;
+                    var boundMinY = toolbarY - this.tolerance;
+                    var boundMaxY = toolbarY + toolbarHeight + this.tolerance;
+
+                    if ((mouseX < boundMinX) || (boundMaxX < mouseX) || (mouseY < boundMinY) || (boundMaxY < mouseY)) {
+                        google.maps.event.removeListener(this.mouseMoveListener);
+                        this.mouseMoveListener = undefined;
+                        this.hide();
+                    }
+                };
+
+                toolbar.hide = function() {
+                    google.maps.event.removeListener(this.mouseDownListener);
+                    this.mouseDownListener = undefined;
+
+                    $(this).stop(true, false).fadeOut(this.fadeSpeed, function() {
+                        this.latLng = undefined;
+                        this.position = new google.maps.Point(0, 0);
+                        this.vertex = undefined;
+
+                        this.style.left = this.position.x + "px";
+                        this.style.top = this.position.y + "px";
+                    });
+                };
+
+                return toolbar;
             }
             
             google.maps.event.addDomListener(window, 'load', initialize);
@@ -190,12 +514,29 @@
             </div>
             <div class="panel">
                 <div class="header">Controls</div>
-                <input class="flatbutton" type="button" value="Center" onclick="actionCenter();">
+                <input class="flatbutton" type="button" value="Center" onclick="actionToolbarCenter();">
                 <input class="flatbutton" type="button" value="Get bounds" onclick="actionGetBounds();">
             </div>
         </aside>
         <section>
             <div id="map-canvas"></div>
         </section>
+        <div id="toolbar" class="panel toolbar">
+            <div>
+                <input id="toolbar_toggle_draggable" class="flatbutton flatbuttontoggle" type="button" value="Draggable" onclick="actionToolbarToggleDraggable();">
+            </div>
+            <div>
+                <input id="toolbar_center" class="flatbutton" type="button" value="Center" onclick="actionToolbarCenter();">
+            </div>
+            <div>
+                <input id="toolbar_remove_polygon" class="flatbutton" type="button" value="Remove polygon" onclick="actionToolbarRemovePolygon();">
+            </div>
+            <div>
+                <input id="toolbar_remove_vertex" class="flatbutton" type="button" value="Remove vertex" onclick="actionToolbarRemoveVertex();">
+            </div>
+            <div>
+                <input id="toolbar_create_polygon" class="flatbutton" type="button" value="Create polygon" onclick="actionToolbarCreatePolygon();">
+            </div>
+        </div>
     </body>
 </html>

@@ -119,6 +119,10 @@ function getPolyFromLocalStorage() {
 function setPolyToLocalStorage(poly) {
     var polyString = "";
 
+    if ((poly === undefined) || (poly == null)) {
+        poly = getPolyFromLocalStorage();
+    }
+
     poly.getPath().forEach(function(element, index) {
         polyString += element.toUrlValue() + "|";
     });
@@ -140,4 +144,31 @@ function getBoundsOfPoly(poly) {
     });
 
     return bounds;
+}
+
+function fromLatLngToPoint(mapElement, map, latLng) {
+    var numTiles = 1 << map.getZoom();
+    var projection = map.getProjection();
+    var worldCoordinate = projection.fromLatLngToPoint(latLng);
+    var pixelCoordinate = new google.maps.Point(
+            worldCoordinate.x * numTiles,
+            worldCoordinate.y * numTiles);
+    var containerOffset = $(mapElement).offset();
+    var containerCoordinate = new google.maps.Point(
+        containerOffset.left, containerOffset.top);
+
+    var topLeft = new google.maps.LatLng(
+        map.getBounds().getNorthEast().lat(),
+        map.getBounds().getSouthWest().lng()
+    );
+
+    var topLeftWorldCoordinate = projection.fromLatLngToPoint(topLeft);
+    var topLeftPixelCoordinate = new google.maps.Point(
+            topLeftWorldCoordinate.x * numTiles,
+            topLeftWorldCoordinate.y * numTiles);
+
+    return new google.maps.Point(
+        parseInt(pixelCoordinate.x - topLeftPixelCoordinate.x + containerCoordinate.x),
+        parseInt(pixelCoordinate.y - topLeftPixelCoordinate.y + containerCoordinate.y)
+    );
 }
