@@ -13,6 +13,7 @@
             section {
                 height: 100%;
                 margin-right: 350px;
+                position: relative;
             }
             aside {
                 float: right;
@@ -24,6 +25,16 @@
                 height: 100%;
                 width: 100%;
             }
+            #map-drawing-overlay {
+                position: absolute;
+                display: none;
+                cursor: crosshair;
+                top: 0px;
+                left: 0px;
+                width: 100%;
+                height: 100%;
+                z-index: 10;
+            }
         </style>
         <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBveTDfzmnHsH8GV9e0pKkPTpGXA__r_HI"></script>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/json2/20130526/json2.min.js"></script>
@@ -32,6 +43,7 @@
         <script src="common.js"></script>
         <script>
             var MAP_ID = "map-canvas";
+            var MAP_DRAWING_OVERLAY_ID = "map-drawing-overlay";
             var SWAP_PANORAMA_INTERVAL_ID = "swapPanoramaInterval";
             var PANORAMA_FADE_OUT_SPEED_ID = "panoramaFadeOutSpeed";
             var ANIMATE_PANORAMA_INTERVAL_ID = "animatePanoramaInterval";
@@ -58,6 +70,7 @@
             var map;
             var poly;
             var toolbar;
+            var mapDrawingOverlay;
 
             function initialize() {
                 mapElement = document.getElementById(MAP_ID);
@@ -68,8 +81,9 @@
                 animatePanoramaZoomStepElement = document.getElementById(ANIMATE_PANORAMA_ZOOM_STEP_ID);
 
                 toolbar = new Toolbar();
+                mapDrawingOverlay = new MapDrawingOverlay();
                 map = new Map(mapElement, toolbar);
-                poly = new Poly(mapElement, map, toolbar, getPolyFromLocalStorage());
+                poly = new Poly(mapElement, map, toolbar, mapDrawingOverlay, getPolyFromLocalStorage());
 
                 actionToolbarCenter();
 
@@ -122,7 +136,7 @@
                     poly = null;
                 }
 
-                poly = new Poly(mapElement, map, toolbar, bounds);
+                poly = new Poly(mapElement, map, toolbar, mapDrawingOverlay, bounds);
 
                 actionToolbarCenter();
 
@@ -180,7 +194,7 @@
                     poly = null;
                 }
 
-                poly = new Poly(mapElement, map, toolbar, toolbar.latLng);
+                poly = new Poly(mapElement, map, toolbar, mapDrawingOverlay, toolbar.latLng);
 
                 poly.startDraw();
 
@@ -206,7 +220,7 @@
                 return map;
             }
 
-            function Poly(mapElement, map, toolbar, polyDefaults) {
+            function Poly(mapElement, map, toolbar, mapDrawingOverlay, polyDefaults) {
                 var poly;
 
                 if (polyDefaults instanceof google.maps.Polygon) {
@@ -237,11 +251,12 @@
                 poly.mapElement = mapElement;
                 poly.map = map;
                 poly.toolbar = toolbar;
+                poly.mapDrawingOverlay = mapDrawingOverlay;
                 poly.clickListener = undefined;
                 poly.mouseOverListener = undefined;
                 poly.mouseMoveListener = undefined;
-                poly.mapMouseMoveListener = undefined;
                 poly.rightClickListener = undefined;
+                poly.overlayClickListener = undefined;
                 poly.notDraggableOptions = {
                     strokeColor: '#000000',
                     strokeOpacity: 0.8,
@@ -280,11 +295,6 @@
                             this.toolbar.show(event, this.mapElement, this.map, this);
                         }
                     }
-                    else if (this.state == this.STATE_DRAWING) {
-                        if (event.vertex !== undefined) {
-                            this.getPath().push(event.latLng);
-                        }
-                    }
                 };
 
                 poly.mouseOverHandler = function(event) {
@@ -298,29 +308,39 @@
                 poly.mouseMoveHandler = function(event) {
                     if (this.state == this.STATE_DRAWING) {
                         var path = this.getPath();
+                        var windowPixel = new google.maps.Point(event.clientX, event.clientY);
+                        var latLng = fromWindowPixelToLatLng(this.mapElement, this.map, windowPixel);
 
-                        path.setAt(path.getLength() - 1, event.latLng);
+                        path.setAt(path.getLength() - 1, latLng);
                     }
                 };
 
-                poly.mapMouseMoveHandler = function(event) {
+                poly.rightClickHandler = function(event) {
                     if (this.state == this.STATE_DRAWING) {
-                        var path = this.getPath();
+                        event.preventDefault();
 
-                        path.setAt(path.getLength() - 1, event.latLng);
-                    }
-                };
-
-                poly.rightClickHandler = function() {
-                    if (this.state == this.STATE_DRAWING) {
                         this.getPath().pop();
                         poly.finishDraw();
+                    }
+                };
+
+                poly.overlayClickHandler = function(event) {
+                    if (this.state == this.STATE_DRAWING) {
+                        var path = this.getPath();
+                        var windowPixel = new google.maps.Point(event.clientX, event.clientY);
+                        var latLng = fromWindowPixelToLatLng(this.mapElement, this.map, windowPixel);
+
+                        this.addVertex(latLng);
                     }
                 };
 
                 poly.toggleDraggable = function() {
                     this.setDraggable(!this.getDraggable());
                     this.setOptions(this.getDraggable() ? this.draggableOptions : this.notDraggableOptions);
+                };
+
+                poly.addVertex = function(latLng) {
+                    this.getPath().push(latLng);
                 };
 
                 poly.removeVertex = function(vertex) {
@@ -339,23 +359,27 @@
                 poly.startDraw = function() {
                     this.state = this.STATE_DRAWING;
 
-                    var path = poly.getPath();
-
-                    path.push(path.getAt(0));
+                    this.addVertex(this.getPath().getAt(0));
 
                     var targetPoly = this;
-                    this.mouseMoveListener = google.maps.event.addListener(targetPoly, 'mousemove', function(event) {targetPoly.mouseMoveHandler(event);});
-                    this.mapMouseMoveListener = google.maps.event.addListener(this.map, 'mousemove', function(event) {targetPoly.mapMouseMoveHandler(event);});
-                    this.rightClickListener = google.maps.event.addListener(targetPoly, 'rightclick', function(event) {targetPoly.rightClickHandler(event);});
+
+                    this.mapDrawingOverlay.activate(this.map, function(event) {targetPoly.mouseMoveHandler(event);});
+
+                    this.mouseMoveListener = google.maps.event.addDomListener(this.mapDrawingOverlay, 'mousemove', function(event) {targetPoly.mouseMoveHandler(event);});
+                    this.rightClickListener = google.maps.event.addDomListener(this.mapDrawingOverlay, 'contextmenu', function(event) {targetPoly.rightClickHandler(event);});
+                    this.overlayClickListener = google.maps.event.addDomListener(this.mapDrawingOverlay, 'click', function(event) {targetPoly.overlayClickHandler(event);});
                 };
 
                 poly.finishDraw = function() {
+                    //TODO Check poly constraints
                     google.maps.event.removeListener(this.mouseMoveListener);
-                    this.mouseMoveListener = undefined;
-                    google.maps.event.removeListener(this.mapMouseMoveListener);
-                    this.mapMouseMoveListener = undefined;
                     google.maps.event.removeListener(this.rightClickListener);
+                    google.maps.event.removeListener(this.overlayClickListener);
+                    this.mouseMoveListener = undefined;
                     this.rightClickListener = undefined;
+                    this.overlayClickListener = undefined;
+
+                    this.mapDrawingOverlay.deactivate();
 
                     this.state = this.STATE_READY;
                 };
@@ -379,7 +403,7 @@
                     $(this).stop(true, true);
 
                     this.latLng = mouseEvent.latLng;
-                    this.position = fromLatLngToPoint(mapElement, map, this.latLng);
+                    this.position = fromLatLngToWindowPixel(mapElement, map, this.latLng);
                     this.vertex = mouseEvent.vertex;
 
                     this.style.left = this.position.x + "px";
@@ -417,12 +441,14 @@
 
                     var targetToolbar = this;
 
+                    //TODO Re-think toolbar hiding logic
                     this.mouseMoveListener = google.maps.event.addDomListener(mapElement, 'mousemove', function(event) {targetToolbar.mouseMouseHandler(event);});
 
                     if (poly === undefined) {
                         this.mouseDownListener = google.maps.event.addDomListener(mapElement, 'mousedown', function(event) {targetToolbar.mouseDownHandler(event);});
                     }
                     else {
+                        //TODO Ignores events outside of poly
                         this.mouseDownListener = google.maps.event.addListener(poly, 'mousedown', function(event) {targetToolbar.mouseDownHandler(event);});
                     }
                 };
@@ -469,6 +495,85 @@
                 };
 
                 return toolbar;
+            }
+
+            function MapDrawingOverlay() {
+                var mapDrawingOverlay = document.getElementById(MAP_DRAWING_OVERLAY_ID);
+                mapDrawingOverlay.STATE_IDLE = "STATE_IDLE";
+                mapDrawingOverlay.STATE_PANNING = "STATE_PANNING";
+                mapDrawingOverlay.state = mapDrawingOverlay.STATE_IDLE;
+                mapDrawingOverlay.offset = $(mapDrawingOverlay).offset();
+                mapDrawingOverlay.width = $(mapDrawingOverlay).width();
+                mapDrawingOverlay.height = $(mapDrawingOverlay).height();
+                mapDrawingOverlay.panBorderWidth = 50;
+                mapDrawingOverlay.panScale = 20;
+                mapDrawingOverlay.panInterval = 20;
+                mapDrawingOverlay.panHorizontal = 0;
+                mapDrawingOverlay.panVertical = 0;
+                mapDrawingOverlay.lastMouseMoveEvent = undefined;
+                mapDrawingOverlay.mouseMoveListener = undefined;
+                mapDrawingOverlay.mapPanEventHandler = undefined;
+
+                // New methods
+
+                mapDrawingOverlay.mouseMoveHandler = function(event, map) {
+                    this.lastMouseMoveEvent = event;
+                    this.panHorizontal = 0;
+                    this.panVertical = 0;
+
+                    if (event.clientX < this.offset.left + this.panBorderWidth) {
+                        this.panHorizontal = (event.clientX - this.offset.left - this.panBorderWidth) / this.panBorderWidth * this.panScale;
+                    }
+                    else if (this.offset.left + this.width - this.panBorderWidth < event.clientX) {
+                        this.panHorizontal = (event.clientX - this.offset.left - this.width + this.panBorderWidth) / this.panBorderWidth * this.panScale;
+                    }
+
+                    if (event.clientY < this.offset.top + this.panBorderWidth) {
+                        this.panVertical = (event.clientY - this.offset.top - this.panBorderWidth) / this.panBorderWidth * this.panScale;
+                    }
+                    else if (this.offset.top + this.height - this.panBorderWidth < event.clientY) {
+                        this.panVertical = (event.clientY - this.offset.top - this.height + this.panBorderWidth) / this.panBorderWidth * this.panScale;
+                    }
+
+                    if ((this.state == this.STATE_IDLE) && ((this.panHorizontal != 0) || (this.panVertical != 0))) {
+                        this.panMap(map);
+                    }
+                };
+
+                mapDrawingOverlay.activate = function(map, mapPanEventHandler) {
+                    mapDrawingOverlay.style.display = "block";
+
+                    this.mouseMoveListener = google.maps.event.addDomListener(this, 'mousemove', function(event) {this.mouseMoveHandler(event, map);});
+
+                    this.mapPanEventHandler = mapPanEventHandler;
+                };
+
+                mapDrawingOverlay.deactivate = function() {
+                    mapDrawingOverlay.style.display = "none";
+
+                    google.maps.event.removeListener(this.mouseMoveListener);
+                    this.mouseMoveListener = undefined;
+                };
+
+                mapDrawingOverlay.panMap = function(map) {
+                    if ((this.panHorizontal != 0) || (this.panVertical != 0)) {
+                        this.state = this.STATE_PANNING;
+
+                        map.panBy(this.panHorizontal, this.panVertical);
+
+                        if ((this.mapPanEventHandler !== undefined) && (this.lastMouseMoveEvent !== undefined)) {
+                            this.mapPanEventHandler(this.lastMouseMoveEvent);
+                        }
+
+                        var targetOverlay = this;
+                        window.setTimeout(function(){targetOverlay.panMap(map);}, targetOverlay.panInterval);
+                    }
+                    else {
+                        this.state = this.STATE_IDLE;
+                    }
+                };
+
+                return mapDrawingOverlay;
             }
             
             google.maps.event.addDomListener(window, 'load', initialize);
@@ -520,6 +625,7 @@
         </aside>
         <section>
             <div id="map-canvas"></div>
+            <div id="map-drawing-overlay"></div>
         </section>
         <div id="toolbar" class="panel toolbar">
             <div>

@@ -22,6 +22,7 @@ function isLocalStorageSupported() {
 }
 
 function getBoundsFromLocalStorage() {
+    //TODO Using polyline encoding algorithm
     var boundsSouthString = $.jStorage.get(BOUNDS_SOUTH_STORAGE_ID);
     var boundsWestString = $.jStorage.get(BOUNDS_WEST_STORAGE_ID);
     var boundsNorthString = $.jStorage.get(BOUNDS_NORTH_STORAGE_ID);
@@ -42,6 +43,7 @@ function getBoundsFromLocalStorage() {
 }
 
 function setBoundsToLocalStorage(bounds) {
+    //TODO Using polyline encoding algorithm
     $.jStorage.set(BOUNDS_SOUTH_STORAGE_ID, bounds.getSouthWest().lat().toString());
     $.jStorage.set(BOUNDS_WEST_STORAGE_ID, bounds.getSouthWest().lng().toString());
     $.jStorage.set(BOUNDS_NORTH_STORAGE_ID, bounds.getNorthEast().lat().toString());
@@ -96,6 +98,7 @@ function removeSettingsFromLocalStorage() {
 }
 
 function getPolyFromLocalStorage() {
+    //TODO Using polyline encoding algorithm
     var polyString = $.jStorage.get(POLY_STORAGE_ID);
 
     if (polyString != null) {
@@ -117,6 +120,7 @@ function getPolyFromLocalStorage() {
 }
 
 function setPolyToLocalStorage(poly) {
+    //TODO Using polyline encoding algorithm
     var polyString = "";
 
     if ((poly === undefined) || (poly == null)) {
@@ -146,7 +150,7 @@ function getBoundsOfPoly(poly) {
     return bounds;
 }
 
-function fromLatLngToPoint(mapElement, map, latLng) {
+function fromLatLngToWindowPixel(mapElement, map, latLng) {
     var numTiles = 1 << map.getZoom();
     var projection = map.getProjection();
     var worldCoordinate = projection.fromLatLngToPoint(latLng);
@@ -154,7 +158,7 @@ function fromLatLngToPoint(mapElement, map, latLng) {
             worldCoordinate.x * numTiles,
             worldCoordinate.y * numTiles);
     var containerOffset = $(mapElement).offset();
-    var containerCoordinate = new google.maps.Point(
+    var containerTopLeft = new google.maps.Point(
         containerOffset.left, containerOffset.top);
 
     var topLeft = new google.maps.LatLng(
@@ -168,7 +172,27 @@ function fromLatLngToPoint(mapElement, map, latLng) {
             topLeftWorldCoordinate.y * numTiles);
 
     return new google.maps.Point(
-        parseInt(pixelCoordinate.x - topLeftPixelCoordinate.x + containerCoordinate.x),
-        parseInt(pixelCoordinate.y - topLeftPixelCoordinate.y + containerCoordinate.y)
+        parseInt(pixelCoordinate.x - topLeftPixelCoordinate.x + containerTopLeft.x),
+        parseInt(pixelCoordinate.y - topLeftPixelCoordinate.y + containerTopLeft.y)
     );
+}
+
+function fromWindowPixelToLatLng(mapElement, map, windowPixel) {
+    var numTiles = 1 << map.getZoom();
+    var projection = map.getProjection();
+    var containerOffset = $(mapElement).offset();
+    var containerTopLeft = new google.maps.Point(containerOffset.left, containerOffset.top);
+    var topLeft = new google.maps.LatLng(map.getBounds().getNorthEast().lat(), map.getBounds().getSouthWest().lng());
+    var topLeftWorldCoordinate = projection.fromLatLngToPoint(topLeft);
+    var topLeftPixelCoordinate = new google.maps.Point(
+            topLeftWorldCoordinate.x * numTiles,
+            topLeftWorldCoordinate.y * numTiles);
+    var pixelCoordinate = new google.maps.Point(
+            topLeftPixelCoordinate.x + windowPixel.x - containerTopLeft.x,
+            topLeftPixelCoordinate.y + windowPixel.y - containerTopLeft.y);
+    var worldCoordinate = new google.maps.Point(
+            pixelCoordinate.x / numTiles,
+            pixelCoordinate.y / numTiles);
+
+    return projection.fromPointToLatLng(worldCoordinate);
 }
