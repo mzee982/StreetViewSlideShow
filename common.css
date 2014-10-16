@@ -49,7 +49,6 @@ input.flattext {
     border-radius: 2px;
 }
 .toolbar {
-    margin: 5px;
     display: none;
     position: absolute;
     left: 0px;

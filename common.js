@@ -196,3 +196,7 @@ function fromWindowPixelToLatLng(mapElement, map, windowPixel) {
 
     return projection.fromPointToLatLng(worldCoordinate);
 }
+
+function sign(x) {
+    return typeof x === 'number' ? x ? x < 0 ? -1 : 1 : x === x ? 0 : NaN : NaN;
+}
