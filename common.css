@@ -11,6 +11,14 @@
     border-radius: 2px;
     box-shadow: 1px 1px 1px #888888;
 }
+.toolbar {
+    margin: 0px;
+    padding: 0px;
+    display: none;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+}
 .desc {
     position: absolute;
     left: 5%;
@@ -33,11 +41,19 @@ input.flatbutton {
 input.flatbutton:hover, input.flatbutton:focus {
     background: #dddddd;
 }
+input.flatbuttonimage {
+    background: none;
+    margin: 3px;
+    padding: 1px;
+    height: 25px;
+    width: 25px;
+    display: block;
+}
 input.flatbuttontoggle {
+    margin: 1px;
     border:2px solid #eeeeee;
 }
 input.flatbuttontoggle:hover, input.flatbuttontoggle:focus {
-    background: #ffffff;
     border:2px solid #000000;
 }
 input.flatbuttontoogleon {
@@ -47,10 +63,4 @@ input.flattext {
     padding: 5px 5px;
     border:1px solid #000000;
     border-radius: 2px;
-}
-.toolbar {
-    display: none;
-    position: absolute;
-    left: 0px;
-    top: 0px;
 }
