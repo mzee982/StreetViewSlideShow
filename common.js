@@ -1,10 +1,7 @@
 var DEFAULT_BOUNDS = new google.maps.LatLngBounds(new google.maps.LatLng(47.481560, 18.964263), new google.maps.LatLng(47.517861, 19.024387));
 var DEFAULT_POLY = new google.maps.Polygon({paths: [{lat: 47.481560, lng: 18.964263}, {lat: 47.517861, lng: 18.964263}, {lat: 47.517861, lng: 19.024387}, {lat: 47.481560, lng: 19.024387}]});
 var DEFAULT_SETTINGS = {swapPanoramaInterval: 5000, panoramaFadeOutSpeed: 2000, animatePanoramaInterval: 150, animatePanoramaHeadingStep: 0.2, animatePanoramaZoomStep: 10};
-var BOUNDS_SOUTH_STORAGE_ID = "boundsSouth";
-var BOUNDS_WEST_STORAGE_ID = "boundsWest";
-var BOUNDS_NORTH_STORAGE_ID = "boundsNorth";
-var BOUNDS_EAST_STORAGE_ID = "boundsEast";
+var BOUNDS_STORAGE_ID = "bounds";
 var POLY_STORAGE_ID = "poly";
 var SWAP_PANORAMA_INTERVAL_STORAGE_ID = "swapPanoramaInterval";
 var PANORAMA_FADE_OUT_SPEED_STORAGE_ID = "panoramaFadeOutSpeed";
@@ -22,39 +19,34 @@ function isLocalStorageSupported() {
 }
 
 function getBoundsFromLocalStorage() {
-    //TODO Using polyline encoding algorithm
-    var boundsSouthString = $.jStorage.get(BOUNDS_SOUTH_STORAGE_ID);
-    var boundsWestString = $.jStorage.get(BOUNDS_WEST_STORAGE_ID);
-    var boundsNorthString = $.jStorage.get(BOUNDS_NORTH_STORAGE_ID);
-    var boundsEastString = $.jStorage.get(BOUNDS_EAST_STORAGE_ID);
+    var encodedBoundsString = $.jStorage.get(BOUNDS_STORAGE_ID);
 
-    if ((boundsSouthString != null) 
-            && (boundsWestString != null) 
-            && (boundsNorthString != null) 
-            && (boundsEastString != null)) {
-        return new google.maps.LatLngBounds(
-                new google.maps.LatLng(parseFloat(boundsSouthString), parseFloat(boundsWestString)),
-                new google.maps.LatLng(parseFloat(boundsNorthString), parseFloat(boundsEastString)));
+    if ((encodedBoundsString !== undefined) && (encodedBoundsString != null)) {
+        var boundsLatLngArray = google.maps.geometry.encoding.decodePath(encodedBoundsString);
+
+        return new google.maps.LatLngBounds(boundsLatLngArray[0], boundsLatLngArray[1]);
     }
     else {
         setBoundsToLocalStorage(DEFAULT_BOUNDS);
+
         return DEFAULT_BOUNDS;
     }
 }
 
 function setBoundsToLocalStorage(bounds) {
-    //TODO Using polyline encoding algorithm
-    $.jStorage.set(BOUNDS_SOUTH_STORAGE_ID, bounds.getSouthWest().lat().toString());
-    $.jStorage.set(BOUNDS_WEST_STORAGE_ID, bounds.getSouthWest().lng().toString());
-    $.jStorage.set(BOUNDS_NORTH_STORAGE_ID, bounds.getNorthEast().lat().toString());
-    $.jStorage.set(BOUNDS_EAST_STORAGE_ID, bounds.getNorthEast().lng().toString());
+
+    if ((bounds === undefined) || (bounds == null)) {
+        bounds = getBoundsFromLocalStorage();
+    }
+
+    var boundsLatLngArray = [bounds.getSouthWest(), bounds.getNorthEast()];
+    var encodedBoundsString = google.maps.geometry.encoding.encodePath(poly.getPath());
+
+    $.jStorage.set(BOUNDS_STORAGE_ID, encodedBoundsString);
 }
 
 function removeBoundsFromLocalStorage() {
-    $.jStorage.deleteKey(BOUNDS_SOUTH_STORAGE_ID);
-    $.jStorage.deleteKey(BOUNDS_WEST_STORAGE_ID);
-    $.jStorage.deleteKey(BOUNDS_NORTH_STORAGE_ID);
-    $.jStorage.deleteKey(BOUNDS_EAST_STORAGE_ID);
+    $.jStorage.deleteKey(BOUNDS_STORAGE_ID);
 }
 
 function getSettingsFromLocalStorage() {
@@ -98,42 +90,28 @@ function removeSettingsFromLocalStorage() {
 }
 
 function getPolyFromLocalStorage() {
-    //TODO Using polyline encoding algorithm
-    var polyString = $.jStorage.get(POLY_STORAGE_ID);
+    var encodedPolyString = $.jStorage.get(POLY_STORAGE_ID);
 
-    if (polyString != null) {
-        var polyPath = [];
-        var latLngStringArray = polyString.split("|");
-
-        for (var i = 0; i < latLngStringArray.length; i++) {
-            var coordsStringArray = latLngStringArray[i].split(",");
-            var latLng = new google.maps.LatLng(parseFloat(coordsStringArray[0]), parseFloat(coordsStringArray[1]));
-            polyPath[polyPath.length] = latLng;
-        }
+    if ((encodedPolyString !== undefined) && (encodedPolyString != null)) {
+        var polyPath = google.maps.geometry.encoding.decodePath(encodedPolyString);
 
         return new google.maps.Polygon({paths: polyPath});
     }
     else {
         setPolyToLocalStorage(DEFAULT_POLY);
+
         return DEFAULT_POLY;
     }
 }
 
 function setPolyToLocalStorage(poly) {
-    //TODO Using polyline encoding algorithm
-    var polyString = "";
-
     if ((poly === undefined) || (poly == null)) {
         poly = getPolyFromLocalStorage();
     }
 
-    poly.getPath().forEach(function(element, index) {
-        polyString += element.toUrlValue() + "|";
-    });
+    var encodedPolyString = google.maps.geometry.encoding.encodePath(poly.getPath());
 
-    polyString = polyString.substr(0, polyString.length - 1);
-
-    $.jStorage.set(POLY_STORAGE_ID, polyString);
+    $.jStorage.set(POLY_STORAGE_ID, encodedPolyString);
 }
 
 function removePolyFromLocalStorage() {

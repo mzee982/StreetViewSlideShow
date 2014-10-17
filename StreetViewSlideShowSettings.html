@@ -36,7 +36,7 @@
                 z-index: 10;
             }
         </style>
-        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBveTDfzmnHsH8GV9e0pKkPTpGXA__r_HI"></script>
+        <script src="https://maps.googleapis.com/maps/api/js?libraries=geometry&key=AIzaSyBveTDfzmnHsH8GV9e0pKkPTpGXA__r_HI"></script>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/json2/20130526/json2.min.js"></script>
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
         <script src="http://cdnjs.cloudflare.com/ajax/libs/jStorage/0.4.4/jstorage.min.js"></script>
@@ -99,6 +99,9 @@
             }
             
             function actionSave() {
+
+                // Save the settings
+
                 var settings = getSettingsFromLocalStorage();
 
                 settings.swapPanoramaInterval = parseInt(swapPanoramaIntervalElement.value);
@@ -109,13 +112,28 @@
 
                 setSettingsToLocalStorage(settings);
                 
-                setPolyToLocalStorage(poly);
+                // Save the polygon
 
-                window.location.reload();
-                
+                if ((poly === undefined) ||(poly == null)) {
+                    setPolyToLocalStorage(null);
+
+                    window.location.reload();
+                }
+                else if (poly.state == poly.STATE_READY) {
+                    setPolyToLocalStorage(poly);
+
+                    window.location.reload();
+                }
+
                 return true;
             }
             
+            function actionRevert() {
+                window.location.reload();
+
+                return true;
+            }
+
             function actionReset() {
                 removeBoundsFromLocalStorage();
                 removePolyFromLocalStorage();
@@ -127,14 +145,16 @@
             }
             
             function actionGetBounds() {
-                var bounds = map.getBounds();
+                if ((poly === undefined) || (poly == null) || (poly.state == poly.STATE_READY)) {
+                    var bounds = map.getBounds();
 
-                if ((poly !== undefined) && (poly != null)) {
-                    poly.remove();
-                    poly = null;
+                    if ((poly !== undefined) && (poly != null)) {
+                        poly.remove();
+                        poly = null;
+                    }
+
+                    poly = new Poly(mapElement, map, toolbar, mapDrawingOverlay, bounds, function(poly) {onPolygonCreated(poly);});
                 }
-
-                poly = new Poly(mapElement, map, toolbar, mapDrawingOverlay, bounds, function(poly) {onPolygonCreated(poly);});
 
                 return true;
             }
@@ -158,7 +178,7 @@
 
                 var targetPoly = ((poly !== undefined) && (poly != null)) ? poly : createdPoly;
 
-                if ((targetPoly !== undefined) && (targetPoly != null)) {
+                if ((targetPoly !== undefined) && (targetPoly != null) && (targetPoly.state == targetPoly.STATE_READY)) {
                     map.fitBounds(getBoundsOfPoly(targetPoly));
                 }
 
@@ -735,19 +755,19 @@
                         <td>ANIMATE_PANORAMA_ZOOM_STEP</td>
                         <td><input class="flattext" type="text" id="animatePanoramaZoomStep" name="animatePanoramaZoomStep" size="4"></td>
                     </tr>
-                    <tr>
-                        <td>
-                            <input class="flatbutton" type="button" value="Save" onclick="actionSave();">
-                            <input class="flatbutton" type="button" value="Reset" onclick="actionReset();">
-                        </td>
-                        <td></td>
-                    </tr>
                 </table>
             </div>
             <div class="panel">
                 <div class="header">Controls</div>
-                <input class="flatbutton" type="button" value="Center" onclick="actionToolbarCenter();">
-                <input class="flatbutton" type="button" value="Get bounds" onclick="actionGetBounds();">
+                <div>
+                    <input class="flatbutton" type="button" value="Save" onclick="actionSave();">
+                    <input class="flatbutton" type="button" value="Revert" onclick="actionRevert();">
+                    <input class="flatbutton" type="button" value="Reset" onclick="actionReset();">
+                </div>
+                <div>
+                    <input class="flatbutton" type="button" value="Center" onclick="actionToolbarCenter();">
+                    <input class="flatbutton" type="button" value="Get bounds" onclick="actionGetBounds();">
+                </div>
             </div>
         </aside>
         <section>
