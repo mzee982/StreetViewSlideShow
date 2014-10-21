@@ -7,17 +7,17 @@
             html, body {
                 height: 100%;
                 width: 100%;
-                margin: 0px;
-                padding: 0px;
+                margin: 0;
+                padding: 0;
             }
             .pano {
                 position: absolute;
                 height: 100%;
                 width: 100%;
-                margin: 0px;
-                padding: 0px;
-                left: 0px;
-                top: 0px;
+                margin: 0;
+                padding: 0;
+                left: 0;
+                top: 0;
                 opacity: 1;
             }
             .pano_top {
@@ -25,6 +25,18 @@
             }
             .pano_bottom {
                 z-index: -1;
+            }
+            .desc {
+                position: absolute;
+                left: 5%;
+                top: 5%;
+                padding: 1%;
+                color: white;
+                text-shadow: 0 0 3px #000000;
+                font-family: sans-serif;
+                font-size: xx-large;
+                background-color: #dddddd;
+                border-radius: 5px;
             }
             .desc_top {
                 opacity: 0;
@@ -115,7 +127,10 @@
                 pano1Element.className = BOTTOM_PANO_CLASS;
                 desc0Element.className = TOP_DESC_CLASS;
                 desc1Element.className = BOTTOM_DESC_CLASS;
-                
+
+                panorama0 = new google.maps.StreetViewPanorama(pano0Element);
+                panorama1 = new google.maps.StreetViewPanorama(pano1Element);
+
                 getRandomPanorama(0);
                 getRandomPanorama(1);
                 
@@ -257,12 +272,12 @@
                 };
                 
                 if (index == 0) {
-                    panorama0 = new google.maps.StreetViewPanorama(pano0Element, panoramaOptions);
+                    panorama0.setOptions(panoramaOptions);
                     desc0Element.innerHTML = data.location.description;
                     doPanoramaDomCleanup(pano0Element);
                 }
                 else {
-                    panorama1 = new google.maps.StreetViewPanorama(pano1Element, panoramaOptions);
+                    panorama1.setOptions(panoramaOptions);
                     desc1Element.innerHTML = data.location.description;
                     doPanoramaDomCleanup(pano1Element);
                 }

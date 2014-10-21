@@ -12,30 +12,19 @@
     box-shadow: 1px 1px 1px #888888;
 }
 .toolbar {
-    margin: 0px;
-    padding: 0px;
+    margin: 5px;
+    padding: 0;
     display: none;
     position: absolute;
-    left: 0px;
-    top: 0px;
-}
-.desc {
-    position: absolute;
-    left: 5%;
-    top: 5%;
-    padding: 1%;
-    color: white;
-    text-shadow: 0 0 3px #000000;
-    font-family: sans-serif;
-    font-size: xx-large;
-    background-color: #dddddd;
-    border-radius: 5px;
+    left: 0;
+    top: 0;
 }
 input.flatbutton {
     cursor: pointer;
     padding: 5px 10px;
+    margin: 2px;
     background: #cccccc;
-    border:0px solid #000000;
+    border:0 solid #000000;
     border-radius: 2px;
 }
 input.flatbutton:hover, input.flatbutton:focus {
